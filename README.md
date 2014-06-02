@@ -24,17 +24,20 @@ Deploy a new VM with two static IPs:
 
 #### Install/Setup
 
-Right now it requires setting up the virtualenv, but eventually it'll be a python module on pypi that you can install via pip.
 
 ```
 git clone git@github.com:snobear/ezmomi.git
 virtualenv ezmomi
 cd ezmomi
+source bin/activate
 pip install -r requirements.txt
 mv config.yml.example config.yml
 ```
 
-Then define your networks and VMware objects in config.yml and you're all set.
+Then define your credentials, networks, and VMware objects in config.yml and you're all set.
+
+Eventually the install will be a python module on pypi that you can install via pip.  (anyone want to tackle that?)
+
 
 #### Contributing
 Don't hesitate to file any bugs or feature requests, and of course pull requests are more than welcome.
