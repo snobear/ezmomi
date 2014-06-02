@@ -27,7 +27,7 @@ Deploy a new VM with two static IPs:
 
 ```
 git clone git@github.com:snobear/ezmomi.git
-virtualenv ezmomi
+virtualenv --no-site-packages ezmomi
 cd ezmomi && source bin/activate
 pip install -r requirements.txt
 mv config.yml.example config.yml
