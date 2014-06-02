@@ -8,7 +8,6 @@ from pprint import pprint, pformat
 import time
 from netaddr import IPNetwork, IPAddress
 import argparse
-from settings import *
 from copy import deepcopy
 import yaml
 import logging
