@@ -1,0 +1,39 @@
+# config.yml
+# EZmomi
+
+# vCenter connection settings
+server: vcenter.example.com
+port: 443
+username: admin
+password: "mypass#123"
+
+# New VM defaults
+cpus: 1
+mem: 3
+template: centos65
+domain: example
+
+dns_servers: ['8.8.8.8','8.8.4.4']
+mailfrom:  ezmomi@example.com
+
+# List your networks here
+networks:
+  '172.10.16.0/20':
+    datacenter: 'Nashville'
+    cluster:    'Nashville Server Cluster'
+    datastore:  'Mystore 1'
+    network:    'My Internal Net'
+    gateway:    '172.10.16.1'
+
+  '192.168.24.50/24':
+    datacenter: 'Foocenter'
+    cluster:    'FooCluster'
+    datastore:  'Foomount'
+    network:    'Internal 2'
+    gateway:    '192.168.24.50'
+
+  # storage network
+  # Note: any networks that not used for primary IPs only need to have the network name defined, like this example.
+  '172.20.200.1/24':
+    network:    'Database Storage'
+  
