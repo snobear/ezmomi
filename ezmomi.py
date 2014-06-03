@@ -74,9 +74,9 @@ def get_obj(content, vimtype, name):
     return obj
 
 '''
- Connect to vCenter server and deploy a VM from template
+ Connect to vCenter server and return content object
 '''
-def clone(config, ip_settings):
+def connect(config):
     # connect to vCenter server
     try:
         si = SmartConnect(host=config['server'], user=config['username'], pwd=config['password'], port=int(config['port']))
@@ -88,6 +88,40 @@ def clone(config, ip_settings):
     atexit.register(Disconnect, si)
     
     content = si.RetrieveContent()
+
+    return content
+
+
+'''
+ Connect to vCenter server and deploy a VM from template
+'''
+def clone(config):
+    config['hostname'] = config['hostname'].lower()
+    config['cpus'] = config['cpus']
+    config['mem'] = config['mem'] * 1024  # convert GB to MB
+
+    # initialize a list to hold our network settings
+    ip_settings = list()
+
+    # Get network settings for each IP
+    for key, ip_string in enumerate(kwargs['ips']):
+        
+        # convert ip from string to the 'IPAddress' type
+        ip = IPAddress(ip_string)
+    
+        # determine network this IP is in
+        for network in config['networks']:
+            #pprint(network['cluster'])
+            if ip in IPNetwork(network):
+                config['networks'][network]['ip'] = ip
+                ipnet = IPNetwork(network)
+                config['networks'][network]['subnet_mask'] = str(ipnet.netmask)
+                ip_settings.append(config['networks'][network])
+   
+        # throw an error if we couldn't find a network for this ip
+        if not any(d['ip'] == ip for d in ip_settings):
+            logging.error("I don't know what network %s is in.  You can supply settings for this network via command line or in config.yml." % ip_string)
+            sys.exit(1)
 
     # network to place new VM in
     get_obj(content, [vim.Network], ip_settings[0]['network'])
@@ -192,7 +226,7 @@ def clone(config, ip_settings):
     # send me an email when the task is complete
     send_email(config, ip_settings)
 
-def main(**kwargs):
+def get_configs(kwargs):
     # load config file
     try:
         config_path = '%s/config.yml' % os.path.dirname(os.path.realpath(__file__))
@@ -214,45 +248,30 @@ def main(**kwargs):
         elif (value is None) and (key not in config):
             # compile list of parameters that were not set
             notset.append(key)
-    
+
     if notset:
         parser.print_help()
         print
         logging.error("Required parameters not set: %s\n" % notset)
         sys.exit(1)
-    
-    config['hostname'] = config['hostname'].lower()
-    config['cpus'] = config['cpus']
-    config['mem'] = config['mem'] * 1024  # convert GB to MB
 
-    # initialize a list to hold our network settings
-    ip_settings = list()
+    return config
 
-    '''
-    Get network settings for each IP
-    '''
-    for key, ip_string in enumerate(kwargs['ips']):
-        
-        # convert ip from string to the 'IPAddress' type
-        ip = IPAddress(ip_string)
-    
-        # determine network this IP is in
-        for network in config['networks']:
-            #pprint(network['cluster'])
-            if ip in IPNetwork(network):
-                config['networks'][network]['ip'] = ip
-                ipnet = IPNetwork(network)
-                config['networks'][network]['subnet_mask'] = str(ipnet.netmask)
-                ip_settings.append(config['networks'][network])
-   
-        # throw an error if we couldn't find a network for this ip
-        if not any(d['ip'] == ip for d in ip_settings):
-            logging.error("I don't know what network %s is in.  You can supply settings for this network via command line or in config.yml." % ip_string)
-            sys.exit(1)
+def listing(config):
 
 
+
+
+def main(**kwargs):
+    # Do action
+    if kwargs['list']:
+        config = get_configs(kwargs)
+
+        print 'list'
     # clone template to a new VM with our specified settings
-    clone(config, ip_settings)
+    else:
+        connect(kwargs)
+        clone(config)
 
 '''
  Main program
@@ -260,16 +279,17 @@ def main(**kwargs):
 if __name__ == '__main__':
     # Define command line arguments
     parser = argparse.ArgumentParser(description='Deploy a new VM in vSphere')
-    parser.add_argument('--template', type=str, help='VM template name to clone from')
-    parser.add_argument('--hostname', type=str, required=True, help='New host name',)
-    parser.add_argument('--ips', type=str, help='Static IPs of new host, separated by a space.  List primary IP first.', nargs='+', required=True)
-    parser.add_argument('--cpus', type=int, help='Number of CPUs')
-    parser.add_argument('--mem', type=int, help='Memory in GB')
-    parser.add_argument('--domain', type=str, help='Domain, e.g. "example.com"',)
     parser.add_argument('--server', type=str, help='vCenter server',)
     parser.add_argument('--port', type=str, help='vCenter server port',)
     parser.add_argument('--username', type=str, help='vCenter username',)
     parser.add_argument('--password', type=str, help='vCenter password',)
+    parser.add_argument('--list', type=str, help='List my vSphere objects',)
+    parser.add_argument('--template', type=str, help='VM template name to clone from')
+    parser.add_argument('--hostname', type=str, help='New host name',)
+    parser.add_argument('--ips', type=str, help='Static IPs of new host, separated by a space.  List primary IP first.', nargs='+')
+    parser.add_argument('--cpus', type=int, help='Number of CPUs')
+    parser.add_argument('--mem', type=int, help='Memory in GB')
+    parser.add_argument('--domain', type=str, help='Domain, e.g. "example.com"',)
 
     # Parse arguments and hand off to main()
     args = parser.parse_args()
