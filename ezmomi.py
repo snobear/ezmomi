@@ -56,9 +56,8 @@ def WaitTask(task, actionName='job', hideResult=False):
     else:
        out = '%s did not complete successfully: %s' % (actionName, task.info.error)
        print out
-       raise task.info.error # should be a Fault... check XXX
+       raise task.info.error
     
-    # may not always be applicable, but can't hurt.
     return task.info.result
 
 '''
