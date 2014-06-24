@@ -24,7 +24,6 @@ class EZMomi(object):
     def __init__(self, **kwargs):
         self.config = self.get_configs(kwargs)
         self.connect()
-        self.list_objects(kwargs['type'])
 
     def get_configs(self, kwargs):
         # load config file
@@ -129,8 +128,6 @@ def get_obj(content, vimtype, name):
 
 
 
-
-
 '''
  Main program
 '''
@@ -145,5 +142,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # initialize ezmomi instance with supplied arguments
-    em = EZMomi(**vars(args))
+    #ez = EZMomi(**vars(args))
+
+    kwargs = (**vars(args))
+    
+    pprint(kwargs)
+
+    #ez.list_objects(kwargs['type'])
+
 
