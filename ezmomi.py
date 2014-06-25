@@ -47,38 +47,12 @@ class EZMomi(object):
                 # compile list of parameters that were not set
                 notset.append(key)
     
-<<<<<<< HEAD
         if notset:
             parser.print_help()
             logging.error("Required parameters not set: %s\n" % notset)
             sys.exit(1)
     
         return config
-=======
-    if task.info.state == vim.TaskInfo.State.success:
-       if task.info.result is not None and not hideResult:
-          out = '%s completed successfully, result: %s' % (actionName, task.info.result)
-       else:
-          out = '%s completed successfully.' % actionName
-    else:
-       out = '%s did not complete successfully: %s' % (actionName, task.info.error)
-       print out
-       raise task.info.error
-    
-    return task.info.result
-
-'''
- Get the vsphere object associated with a given text name
-'''
-def get_obj(content, vimtype, name):
-    obj = None
-    container = content.viewManager.CreateContainerView(content.rootFolder, vimtype, True)
-    for c in container.view:
-        if c.name == name:
-            obj = c
-            break
-    return obj
->>>>>>> master
 
     '''
      Connect to vCenter server
@@ -120,7 +94,6 @@ def get_obj(content, vimtype, name):
 
         for c in container.view:
             print "{0:<20} {1:<20}".format(c._moId, c.name)
-
 
     def clone(self):
         self.config['hostname'] = self.config['hostname'].lower()
