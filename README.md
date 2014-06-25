@@ -25,7 +25,7 @@ Get info about available resources, e.g.:
 ./ezmomi.py list --type Datastore
 ```
 
-See [Managed Object Types)(http://pubs.vmware.com/vsphere-50/index.jsp#com.vmware.wssdk.apiref.doc_50/mo-types-landing.html) in the vSphere API docs for a list of types to look up.
+See [Managed Object Types](http://pubs.vmware.com/vsphere-50/index.jsp#com.vmware.wssdk.apiref.doc_50/mo-types-landing.html) in the vSphere API docs for a list of types to look up.
 
 #### Help
 
