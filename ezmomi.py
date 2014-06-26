@@ -12,7 +12,7 @@ from copy import deepcopy
 import yaml
 import logging
 from netaddr import IPNetwork, IPAddress
-from params import *
+from params import add_params
 
 '''
 Logging
@@ -221,10 +221,23 @@ class EZMomi(object):
         clonespec.template = False
 
         # fire the clone task
-        task = template_vm.Clone(folder=destfolder, name=self.config['hostname'].title(), spec=clonespec)
+        task = template_vm.Clone(folder=destfolder, name=self.config['hostname'], spec=clonespec)
         result = self.WaitTask(task, 'VM clone task')
 
         self.send_email()
+         
+    def destroy(self):
+        print "Finding VM named %s..." % self.config['name']
+        vm = self.get_obj([vim.VirtualMachine], self.config['name'])
+        
+        if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOn:
+            print "Powering off %s..." % self.config['name']
+            task = vm.PowerOff()
+            result = self.WaitTask(task, 'VM power off')
+        
+        print "Destroying %s..." % self.config['name']
+        task = vm.Destroy()
+        result = self.WaitTask(task, 'VM destroy task')
 
     '''
      Helper methods
@@ -250,7 +263,6 @@ class EZMomi(object):
      Get the vsphere object associated with a given text name
     '''
     def get_obj(self, vimtype, name):
-        vim_obj = "vim.%s" % vimtype
         obj = None
         container = self.content.viewManager.CreateContainerView(self.content.rootFolder, vimtype, True)
         for c in container.view:
@@ -287,8 +299,7 @@ if __name__ == '__main__':
     subparsers = parser.add_subparsers(help='Command', dest='mode')
 
     # set up each command section
-    add_params_for_list(subparsers)
-    add_params_for_clone(subparsers)
+    add_params(subparsers)
 
     # parse arguments
     args = parser.parse_args()
@@ -303,3 +314,5 @@ if __name__ == '__main__':
         ez.list_objects()
     elif kwargs['mode'] == 'clone':
         ez.clone()
+    elif kwargs['mode'] == 'destroy':
+        ez.destroy()
