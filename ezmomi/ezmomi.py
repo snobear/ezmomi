@@ -1,24 +1,21 @@
-#!/usr/bin/env python
 from pyVim.connect import SmartConnect, Disconnect
 from pyVmomi import vim, vmodl
 import atexit
 import os
 import sys
+import errno
 from pprint import pprint, pformat
 import time
 from netaddr import IPNetwork, IPAddress
-import argparse
 from copy import deepcopy
 import yaml
 import logging
 from netaddr import IPNetwork, IPAddress
-from params import *
 
 '''
 Logging
 '''
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-
 
 class EZMomi(object):
     def __init__(self, **kwargs):
@@ -27,14 +24,38 @@ class EZMomi(object):
         self.connect()
 
     def get_configs(self, kwargs):
+        default_cfg_dir = "%s/.config/ezmomi" % os.path.expanduser("~")
+        default_config_path = "%s/config.yml" % default_cfg_dir
+        
+        # use path from env var if it's set and valid
+        if 'EZMOMI_CONFIG' in os.environ:
+            if os.path.isfile(os.environ['EZMOMI_CONFIG']):
+                config_path = os.environ['EZMOMI_CONFIG']
+            else:
+                print "%s does not exist.  Set the EZMOMI_CONFIG environment variable to your config file's path."
+                sys.exit(1)
+        # or use the default config file path if it exists
+        elif os.path.isfile(default_config_path):
+            config_path = default_config_path
+        # else create the default config path and copy the example config there
+        else:
+            from shutil import copy
+            if not os.path.exists(default_cfg_dir):
+                os.makedirs(default_cfg_dir)
+            config_path = default_config_path
+
+            #copy()
+
         try:
-            config_path = '%s/config.yml' % os.path.dirname(os.path.realpath(__file__))
+            # get config file path from env var or use default
+            default_cfg_path = default_cfg_dir
+            config_path = os.environ.get('EZMOMI_CONFIG', default_cfg_path)
             config = yaml.load(file(config_path))
         except IOError:
-            logging.exception('Unable to open config file.')
+            logging.exception('Unable to open config file.  The default path for the ezmomi config file is ~/.config/ezmomi/config.yml. You can also specify the config file path by setting the EZMOMI_CONFIG environment variable.')
             sys.exit(1)
         except Exception:
-            logging.exception('Unable to read config file.')
+            logging.exception('Unable to read config file.  YAML syntax issue, perhaps?')
             sys.exit(1)
 
         # Check all required values were supplied either via command line or config
@@ -221,10 +242,23 @@ class EZMomi(object):
         clonespec.template = False
 
         # fire the clone task
-        task = template_vm.Clone(folder=destfolder, name=self.config['hostname'].title(), spec=clonespec)
+        task = template_vm.Clone(folder=destfolder, name=self.config['hostname'], spec=clonespec)
         result = self.WaitTask(task, 'VM clone task')
 
         self.send_email()
+         
+    def destroy(self):
+        print "Finding VM named %s..." % self.config['name']
+        vm = self.get_obj([vim.VirtualMachine], self.config['name'])
+        
+        if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOn:
+            print "Powering off %s..." % self.config['name']
+            task = vm.PowerOff()
+            result = self.WaitTask(task, 'VM power off')
+        
+        print "Destroying %s..." % self.config['name']
+        task = vm.Destroy()
+        result = self.WaitTask(task, 'VM destroy task')
 
     '''
      Helper methods
@@ -250,7 +284,6 @@ class EZMomi(object):
      Get the vsphere object associated with a given text name
     '''
     def get_obj(self, vimtype, name):
-        vim_obj = "vim.%s" % vimtype
         obj = None
         container = self.content.viewManager.CreateContainerView(self.content.rootFolder, vimtype, True)
         for c in container.view:
@@ -265,7 +298,7 @@ class EZMomi(object):
     def WaitTask(self, task, actionName='job', hideResult=False):
         while task.info.state == vim.TaskInfo.State.running:
            time.sleep(2)
-        
+
         if task.info.state == vim.TaskInfo.State.success:
            if task.info.result is not None and not hideResult:
               out = '%s completed successfully, result: %s' % (actionName, task.info.result)
@@ -277,29 +310,3 @@ class EZMomi(object):
            raise task.info.error
         
         return task.info.result
-
-'''
- Ye Olde Main
-'''
-if __name__ == '__main__':
-    # Set up command line arguments
-    parser = argparse.ArgumentParser(description='Perform common vSphere API tasks')
-    subparsers = parser.add_subparsers(help='Command', dest='mode')
-
-    # set up each command section
-    add_params_for_list(subparsers)
-    add_params_for_clone(subparsers)
-
-    # parse arguments
-    args = parser.parse_args()
-
-    # initialize ezmomi instance
-    ez = EZMomi(**vars(args))
-    
-    kwargs = vars(args)
-    
-    # choose your adventure
-    if kwargs['mode'] == 'list':
-        ez.list_objects()
-    elif kwargs['mode'] == 'clone':
-        ez.clone()

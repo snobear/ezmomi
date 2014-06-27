@@ -54,5 +54,7 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
-# Custom settings file
-config.yml
+# ezmomi additions
+!bin/ezmomi
+
+
