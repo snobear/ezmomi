@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from pyVim.connect import SmartConnect, Disconnect
 from pyVmomi import vim, vmodl
 import atexit
@@ -11,10 +12,6 @@ from copy import deepcopy
 import yaml
 import logging
 from netaddr import IPNetwork, IPAddress
-<<<<<<< HEAD:ezmomi/ezmomi.py
-=======
-from params import add_params
->>>>>>> 4a40ac7d460bdbb1402989e35540ecb57df4f881:ezmomi.py
 
 '''
 Logging
@@ -314,33 +311,3 @@ class EZMomi(object):
            raise task.info.error
         
         return task.info.result
-<<<<<<< HEAD:ezmomi/ezmomi.py
-=======
-
-'''
- Ye Olde Main
-'''
-if __name__ == '__main__':
-    # Set up command line arguments
-    parser = argparse.ArgumentParser(description='Perform common vSphere API tasks')
-    subparsers = parser.add_subparsers(help='Command', dest='mode')
-
-    # set up each command section
-    add_params(subparsers)
-
-    # parse arguments
-    args = parser.parse_args()
-
-    # initialize ezmomi instance
-    ez = EZMomi(**vars(args))
-    
-    kwargs = vars(args)
-    
-    # choose your adventure
-    if kwargs['mode'] == 'list':
-        ez.list_objects()
-    elif kwargs['mode'] == 'clone':
-        ez.clone()
-    elif kwargs['mode'] == 'destroy':
-        ez.destroy()
->>>>>>> 4a40ac7d460bdbb1402989e35540ecb57df4f881:ezmomi.py
