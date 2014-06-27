@@ -3,6 +3,7 @@
 '''
 import argparse
 from params import add_params
+from ezmomi import EZMomi
 
 def cli():
     # Set up command line arguments
