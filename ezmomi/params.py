@@ -6,7 +6,7 @@ def add_params(subparsers):
     list_parser = subparsers.add_parser('list',help='List VMware objects on your VMware server')
 
     list_parser.add_argument('--type',
-                              default='all',
+                              required=True,
                               help='Object type, e.g. Network, VirtualMachine.')
 
     # clone
