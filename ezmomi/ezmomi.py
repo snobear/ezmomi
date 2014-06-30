@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from pyVim.connect import SmartConnect, Disconnect
 from pyVmomi import vim, vmodl
 import atexit
@@ -7,15 +8,8 @@ import errno
 from pprint import pprint, pformat
 import time
 from netaddr import IPNetwork, IPAddress
-from copy import deepcopy
 import yaml
-import logging
 from netaddr import IPNetwork, IPAddress
-
-'''
-Logging
-'''
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 class EZMomi(object):
     def __init__(self, **kwargs):
@@ -25,37 +19,44 @@ class EZMomi(object):
 
     def get_configs(self, kwargs):
         default_cfg_dir = "%s/.config/ezmomi" % os.path.expanduser("~")
-        default_config_path = "%s/config.yml" % default_cfg_dir
+        default_config_file = "%s/config.yml" % default_cfg_dir
         
         # use path from env var if it's set and valid
         if 'EZMOMI_CONFIG' in os.environ:
             if os.path.isfile(os.environ['EZMOMI_CONFIG']):
-                config_path = os.environ['EZMOMI_CONFIG']
+                config_file = os.environ['EZMOMI_CONFIG']
             else:
                 print "%s does not exist.  Set the EZMOMI_CONFIG environment variable to your config file's path."
                 sys.exit(1)
+
         # or use the default config file path if it exists
-        elif os.path.isfile(default_config_path):
-            config_path = default_config_path
+        elif os.path.isfile(default_config_file):
+            config_file = default_config_file
         # else create the default config path and copy the example config there
         else:
             from shutil import copy
             if not os.path.exists(default_cfg_dir):
                 os.makedirs(default_cfg_dir)
-            config_path = default_config_path
-
-            #copy()
-
+            config_file = default_config_file
+            
+            # copy example config
+            ezmomi_module_dir = os.path.dirname(os.path.abspath(__file__))
+            ezmomi_ex_config = "%s/config/config.yml.example" % ezmomi_module_dir
+            try:
+                copy(ezmomi_ex_config, default_cfg_dir)
+            except:
+                print "Error copying example config file from %s to %s" % (ezmomi_ex_config, default_cfg_dir)
+                sys.exit(1)
+            
+            print "I could not find a config.yml file, so I copied an example to your home directory at %s/config.yml.example.  Please rename this to config.yml and add your vSphere environment's settings." % default_cfg_dir
+            sys.exit(0)
         try:
-            # get config file path from env var or use default
-            default_cfg_path = default_cfg_dir
-            config_path = os.environ.get('EZMOMI_CONFIG', default_cfg_path)
-            config = yaml.load(file(config_path))
+            config = yaml.load(file(config_file))
         except IOError:
-            logging.exception('Unable to open config file.  The default path for the ezmomi config file is ~/.config/ezmomi/config.yml. You can also specify the config file path by setting the EZMOMI_CONFIG environment variable.')
+            print 'Unable to open config file.  The default path for the ezmomi config file is ~/.config/ezmomi/config.yml. You can also specify the config file path by setting the EZMOMI_CONFIG environment variable.'
             sys.exit(1)
         except Exception:
-            logging.exception('Unable to read config file.  YAML syntax issue, perhaps?')
+            print 'Unable to read config file.  YAML syntax issue, perhaps?'
             sys.exit(1)
 
         # Check all required values were supplied either via command line or config
@@ -70,7 +71,7 @@ class EZMomi(object):
     
         if notset:
             parser.print_help()
-            logging.error("Required parameters not set: %s\n" % notset)
+            print "Required parameters not set: %s\n" % notset
             sys.exit(1)
     
         return config
@@ -87,7 +88,7 @@ class EZMomi(object):
                               port = int(self.config['port']),
                               )
         except:
-            logging.exception('Unable to connect to vsphere server.')
+            print 'Unable to connect to vsphere server.'
             sys.exit()
 
         # add a clean up routine
@@ -106,7 +107,7 @@ class EZMomi(object):
         try:
             container = self.content.viewManager.CreateContainerView(self.content.rootFolder, [eval(vim_obj)], True)
         except AttributeError:
-            logging.error("%s is not a Managed Object Type.  See the vSphere API docs for possible options." % vimtype)
+            print "%s is not a Managed Object Type.  See the vSphere API docs for possible options." % vimtype
             sys.exit()
             
         # print header line
@@ -120,7 +121,7 @@ class EZMomi(object):
         self.config['hostname'] = self.config['hostname'].lower()
         self.config['mem'] = self.config['mem'] * 1024  # convert GB to MB
 
-        logging.info("Cloning %s to new host %s..." % (self.config['template'], self.config['hostname']))
+        print "Cloning %s to new host %s..." % (self.config['template'], self.config['hostname'])
 
         # initialize a list to hold our network settings
         ip_settings = list()
@@ -142,7 +143,7 @@ class EZMomi(object):
        
             # throw an error if we couldn't find a network for this ip
             if not any(d['ip'] == ip for d in ip_settings):
-                logging.error("I don't know what network %s is in.  You can supply settings for this network in self.config.yml." % ip_string)
+                print "I don't know what network %s is in.  You can supply settings for this network in self.config.yml." % ip_string
                 sys.exit(1)
     
         # network to place new VM in

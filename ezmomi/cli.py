@@ -1,10 +1,10 @@
+'''
+ Command line definitions for ezmomi
+'''
 import argparse
 from params import add_params
+from ezmomi import EZMomi
 
-
-'''
- Start 'er up
-'''
 def cli():
     # Set up command line arguments
     parser = argparse.ArgumentParser(description='Perform common vSphere API tasks')
