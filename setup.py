@@ -15,7 +15,7 @@ setup(
     url='https://github.com/snobear/ezmomi',
     license='LICENSE.txt',
     description='VMware vSphere Command line tool',
-    long_description=open('README.tx').read(),
+    long_description=open('README.txt').read(),
     install_requires=[
         "PyYAML==3.11",
         "argparse==1.2.1",
