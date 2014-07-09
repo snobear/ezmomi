@@ -9,7 +9,6 @@ from pprint import pprint, pformat
 import time
 from netaddr import IPNetwork, IPAddress
 import yaml
-from netaddr import IPNetwork, IPAddress
 
 class EZMomi(object):
     def __init__(self, **kwargs):
