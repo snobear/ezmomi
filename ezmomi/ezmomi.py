@@ -86,9 +86,10 @@ class EZMomi(object):
                               pwd  = self.config['password'],
                               port = int(self.config['port']),
                               )
-        except:
+        except Exception as e:
             print 'Unable to connect to vsphere server.'
-            sys.exit()
+            print e.msg
+            sys.exit(1)
 
         # add a clean up routine
         atexit.register(Disconnect, self.si)
