@@ -81,7 +81,7 @@ class EZMomi(object):
     def connect(self):
         # connect to vCenter server
         try:
-            si = SmartConnect(host = self.config['server'],
+            self.si = SmartConnect(host = self.config['server'],
                               user = self.config['username'],
                               pwd  = self.config['password'],
                               port = int(self.config['port']),
@@ -91,9 +91,9 @@ class EZMomi(object):
             sys.exit()
 
         # add a clean up routine
-        atexit.register(Disconnect, si)
+        atexit.register(Disconnect, self.si)
 
-        self.content = si.RetrieveContent()
+        self.content = self.si.RetrieveContent()
 
     '''
      Command Section: list
@@ -102,7 +102,7 @@ class EZMomi(object):
     def list_objects(self):
         vimtype = self.config['type']
         vim_obj = "vim.%s" % vimtype
-        
+
         try:
             container = self.content.viewManager.CreateContainerView(self.content.rootFolder, [eval(vim_obj)], True)
         except AttributeError:
@@ -126,7 +126,7 @@ class EZMomi(object):
         ip_settings = list()
     
         # Get network settings for each IP
-        for key, ip_string in enumerate(kwargs['ips']):
+        for key, ip_string in enumerate(self.config['ips']):
             
             # convert ip from string to the 'IPAddress' type
             ip = IPAddress(ip_string)
@@ -139,10 +139,10 @@ class EZMomi(object):
                     ipnet = IPNetwork(network)
                     self.config['networks'][network]['subnet_mask'] = str(ipnet.netmask)
                     ip_settings.append(self.config['networks'][network])
-       
+
             # throw an error if we couldn't find a network for this ip
             if not any(d['ip'] == ip for d in ip_settings):
-                print "I don't know what network %s is in.  You can supply settings for this network in self.config.yml." % ip_string
+                print "I don't know what network %s is in.  You can supply settings for this network in config.yml." % ip_string
                 sys.exit(1)
     
         # network to place new VM in
@@ -242,23 +242,23 @@ class EZMomi(object):
         clonespec.template = False
 
         # fire the clone task
-        task = template_vm.Clone(folder=destfolder, name=self.config['hostname'], spec=clonespec)
-        result = self.WaitTask(task, 'VM clone task')
+        tasks = [template_vm.Clone(folder=destfolder, name=self.config['hostname'], spec=clonespec)]
+        result = self.WaitForTasks(tasks)
 
         self.send_email()
-         
+
     def destroy(self):
+        tasks = list()
         print "Finding VM named %s..." % self.config['name']
         vm = self.get_obj([vim.VirtualMachine], self.config['name'])
-        
+
+        # need to shut the VM down before destorying it
         if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOn:
-            print "Powering off %s..." % self.config['name']
-            task = vm.PowerOff()
-            result = self.WaitTask(task, 'VM power off')
-        
+            tasks.append(vm.PowerOff())
+
+        tasks.append(vm.Destroy())
         print "Destroying %s..." % self.config['name']
-        task = vm.Destroy()
-        result = self.WaitTask(task, 'VM destroy task')
+        result = self.WaitForTasks(tasks)
 
     '''
      Helper methods
@@ -269,7 +269,7 @@ class EZMomi(object):
     
         # get user who ran this script
         me = os.getenv('USER')
-    
+
         email_body = 'Your VM is ready!'
         msg = MIMEText(email_body)
         msg['Subject'] = '%s - VM deploy complete' % self.config['hostname']
@@ -292,21 +292,51 @@ class EZMomi(object):
                 break
         return obj
 
-    '''
-     Waits and provides updates on a vSphere task
-    '''
-    def WaitTask(self, task, actionName='job', hideResult=False):
-        while task.info.state == vim.TaskInfo.State.running:
-           time.sleep(2)
+    def WaitForTasks(self, tasks):
+        '''
+        Given the service instance si and tasks, it returns after all the
+        tasks are complete
+        '''
 
-        if task.info.state == vim.TaskInfo.State.success:
-           if task.info.result is not None and not hideResult:
-              out = '%s completed successfully, result: %s' % (actionName, task.info.result)
-           else:
-              out = '%s completed successfully.' % actionName
-        else:
-           out = '%s did not complete successfully: %s' % (actionName, task.info.error)
-           print out
-           raise task.info.error
+        pc = self.si.content.propertyCollector
+
+        taskList = [str(task) for task in tasks]
+
+        # Create filter
+        objSpecs = [vmodl.query.PropertyCollector.ObjectSpec(obj=task) for task in tasks]
+        propSpec = vmodl.query.PropertyCollector.PropertySpec(type=vim.Task, pathSet=[], all=True)
+        filterSpec = vmodl.query.PropertyCollector.FilterSpec()
+        filterSpec.objectSet = objSpecs
+        filterSpec.propSet = [propSpec]
+        filter = pc.CreateFilter(filterSpec, True)
         
-        return task.info.result
+        try:
+            version, state = None, None
+        
+            # Loop looking for updates till the state moves to a completed state.
+            while len(taskList):
+                update = pc.WaitForUpdates(version)
+                for filterSet in update.filterSet:
+                    for objSet in filterSet.objectSet:
+                        task = objSet.obj
+                        for change in objSet.changeSet:
+                            if change.name == 'info':
+                                state = change.val.state
+                            elif change.name == 'info.state':
+                                state = change.val
+                            else:
+                                continue
+                            
+                            if not str(task) in taskList:
+                                continue
+                            
+                            if state == vim.TaskInfo.State.success:
+                                # Remove task from taskList
+                                taskList.remove(str(task))
+                            elif state == vim.TaskInfo.State.error:
+                                raise task.info.error
+                # Move to next version
+                version = update.version
+        finally:
+            if filter:
+                filter.Destroy()
