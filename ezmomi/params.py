@@ -31,6 +31,7 @@ def add_params(subparsers):
                               type=str,
                               help='VM template name to clone from')
     clone_parser.add_argument('--hostname',
+                              required=True,
                               type=str,
                               help='New host name',
                              )
