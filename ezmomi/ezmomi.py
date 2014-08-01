@@ -10,6 +10,7 @@ import time
 from netaddr import IPNetwork, IPAddress
 import yaml
 
+
 class EZMomi(object):
     def __init__(self, **kwargs):
         # load up our configs and connect to the vSphere server
@@ -19,13 +20,14 @@ class EZMomi(object):
     def get_configs(self, kwargs):
         default_cfg_dir = "%s/.config/ezmomi" % os.path.expanduser("~")
         default_config_file = "%s/config.yml" % default_cfg_dir
-        
+
         # use path from env var if it's set and valid
         if 'EZMOMI_CONFIG' in os.environ:
             if os.path.isfile(os.environ['EZMOMI_CONFIG']):
                 config_file = os.environ['EZMOMI_CONFIG']
             else:
-                print "%s does not exist.  Set the EZMOMI_CONFIG environment variable to your config file's path."
+                print "%s does not exist.  Set the EZMOMI_CONFIG environment" \
+                      "variable to your config file's path."
                 sys.exit(1)
 
         # or use the default config file path if it exists
@@ -37,29 +39,38 @@ class EZMomi(object):
             if not os.path.exists(default_cfg_dir):
                 os.makedirs(default_cfg_dir)
             config_file = default_config_file
-            
+
             # copy example config
             ezmomi_module_dir = os.path.dirname(os.path.abspath(__file__))
-            ezmomi_ex_config = "%s/config/config.yml.example" % ezmomi_module_dir
+            ezmomi_ex_config = ("%s/config/config.yml.example"
+                                % ezmomi_module_dir)
             try:
                 copy(ezmomi_ex_config, default_cfg_dir)
             except:
-                print "Error copying example config file from %s to %s" % (ezmomi_ex_config, default_cfg_dir)
+                print ("Error copying example config file from %s to %s"
+                       % (ezmomi_ex_config, default_cfg_dir))
                 sys.exit(1)
-            
-            print "I could not find a config.yml file, so I copied an example to your home directory at %s/config.yml.example.  Please rename this to config.yml and add your vSphere environment's settings." % default_cfg_dir
+
+            print "I could not find a config.yml file, so I copied an example "  \
+                  "to your home directory at %s/config.yml.example.  Please "    \
+                  "rename this to config.yml and add your vSphere "              \
+                  "environment's settings." % default_cfg_dir
             sys.exit(0)
         try:
             config = yaml.load(file(config_file))
         except IOError:
-            print 'Unable to open config file.  The default path for the ezmomi config file is ~/.config/ezmomi/config.yml. You can also specify the config file path by setting the EZMOMI_CONFIG environment variable.'
+            print 'Unable to open config file.  The default path for the ezmomi' \
+                  ' config file is ~/.config/ezmomi/config.yml. You can also '   \
+                  'specify the config file path by setting the EZMOMI_CONFIG '   \
+                  'environment variable.'
             sys.exit(1)
         except Exception:
             print 'Unable to read config file.  YAML syntax issue, perhaps?'
             sys.exit(1)
 
-        # Check all required values were supplied either via command line or config
-        # override defaults from config.yml with any supplied command line arguments
+        # Check all required values were supplied either via command line
+        # or config. override defaults from config.yml with any supplied
+        # command line arguments
         notset = list()
         for key, value in kwargs.items():
             if value:
@@ -67,12 +78,11 @@ class EZMomi(object):
             elif (value is None) and (key not in config):
                 # compile list of parameters that were not set
                 notset.append(key)
-    
+
         if notset:
-            parser.print_help()
             print "Required parameters not set: %s\n" % notset
             sys.exit(1)
-    
+
         return config
 
     '''
@@ -81,14 +91,14 @@ class EZMomi(object):
     def connect(self):
         # connect to vCenter server
         try:
-            self.si = SmartConnect(host = self.config['server'],
-                              user = self.config['username'],
-                              pwd  = self.config['password'],
-                              port = int(self.config['port']),
-                              )
+            self.si = SmartConnect(host=self.config['server'],
+                                   user=self.config['username'],
+                                   pwd=self.config['password'],
+                                   port=int(self.config['port']),
+                                   )
         except Exception as e:
             print 'Unable to connect to vsphere server.'
-            print e.msg
+            print e
             sys.exit(1)
 
         # add a clean up routine
@@ -105,14 +115,16 @@ class EZMomi(object):
         vim_obj = "vim.%s" % vimtype
 
         try:
-            container = self.content.viewManager.CreateContainerView(self.content.rootFolder, [eval(vim_obj)], True)
+            container = self.content.viewManager.CreateContainerView(
+                self.content.rootFolder, [eval(vim_obj)], True)
         except AttributeError:
-            print "%s is not a Managed Object Type.  See the vSphere API docs for possible options." % vimtype
-            sys.exit()
-            
+            print "%s is not a Managed Object Type.  See the vSphere API " \
+                  "docs for possible options." % vimtype
+            sys.exit(1)
+
         # print header line
         print "%s list" % vimtype
-        print "{0:<20} {1:<20}".format('MOID','Name')
+        print "{0:<20} {1:<20}".format('MOID', 'Name')
 
         for c in container.view:
             print "{0:<20} {1:<20}".format(c._moId, c.name)
@@ -121,88 +133,106 @@ class EZMomi(object):
         self.config['hostname'] = self.config['hostname'].lower()
         self.config['mem'] = self.config['mem'] * 1024  # convert GB to MB
 
-        print "Cloning %s to new host %s..." % (self.config['template'], self.config['hostname'])
+        print "Cloning %s to new host %s..." % (
+            self.config['template'],
+            self.config['hostname']
+        )
 
         # initialize a list to hold our network settings
         ip_settings = list()
-    
+
         # Get network settings for each IP
         for key, ip_string in enumerate(self.config['ips']):
-            
+
             # convert ip from string to the 'IPAddress' type
             ip = IPAddress(ip_string)
-        
+
             # determine network this IP is in
             for network in self.config['networks']:
-                #pprint(network['cluster'])
                 if ip in IPNetwork(network):
                     self.config['networks'][network]['ip'] = ip
                     ipnet = IPNetwork(network)
-                    self.config['networks'][network]['subnet_mask'] = str(ipnet.netmask)
+                    self.config['networks'][network]['subnet_mask'] = str(
+                        ipnet.netmask
+                    )
                     ip_settings.append(self.config['networks'][network])
 
             # throw an error if we couldn't find a network for this ip
             if not any(d['ip'] == ip for d in ip_settings):
-                print "I don't know what network %s is in.  You can supply settings for this network in config.yml." % ip_string
+                print "I don't know what network %s is in.  You can supply " \
+                      "settings for this network in config.yml." % ip_string
                 sys.exit(1)
-    
+
         # network to place new VM in
-        self.get_obj( [vim.Network], ip_settings[0]['network'])
-        datacenter = self.get_obj( [vim.Datacenter], ip_settings[0]['datacenter'])
-        
+        self.get_obj([vim.Network], ip_settings[0]['network'])
+        datacenter = self.get_obj([vim.Datacenter],
+                                  ip_settings[0]['datacenter']
+                                  )
+
         # get the folder where VMs are kept for this datacenter
         destfolder = datacenter.vmFolder
-        
-        cluster = self.get_obj( [vim.ClusterComputeResource], ip_settings[0]['cluster'])
-        resource_pool = cluster.resourcePool # use same root resource pool that my desired cluster uses
-        datastore = self.get_obj( [vim.Datastore], ip_settings[0]['datastore'])
-        template_vm = self.get_obj( [vim.VirtualMachine], self.config['template'])
-    
+
+        cluster = self.get_obj([vim.ClusterComputeResource],
+                               ip_settings[0]['cluster']
+                               )
+        # use same root resource pool that my desired cluster uses
+        resource_pool = cluster.resourcePool
+        datastore = self.get_obj([vim.Datastore], ip_settings[0]['datastore'])
+        template_vm = self.get_obj([vim.VirtualMachine],
+                                   self.config['template']
+                                   )
+
         # Relocation spec
         relospec = vim.vm.RelocateSpec()
         relospec.datastore = datastore
         relospec.pool = resource_pool
-    
+
         '''
          Networking self.config for VM and guest OS
         '''
-        devices = [] 
+        devices = []
         adaptermaps = []
-    
+
         # create a Network device for each static IP
         for key, ip in enumerate(ip_settings):
             # VM device
             nic = vim.vm.device.VirtualDeviceSpec()
-            nic.operation = vim.vm.device.VirtualDeviceSpec.Operation.add  # or edit if a device exists
+            # or edit if a device exists
+            nic.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
             nic.device = vim.vm.device.VirtualVmxnet3()
             nic.device.wakeOnLanEnabled = True
             nic.device.addressType = 'assigned'
-            nic.device.key = 4000  # 4000 seems to be the value to use for a vmxnet3 device
+            # 4000 seems to be the value to use for a vmxnet3 device
+            nic.device.key = 4000
             nic.device.deviceInfo = vim.Description()
             nic.device.deviceInfo.label = 'Network Adapter %s' % (key + 1)
             nic.device.deviceInfo.summary = ip_settings[key]['network']
-            nic.device.backing = vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
-            nic.device.backing.network = self.get_obj( [vim.Network], ip_settings[key]['network'])
+            nic.device.backing = (
+                vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
+            )
+            nic.device.backing.network = (
+                self.get_obj([vim.Network], ip_settings[key]['network'])
+            )
             nic.device.backing.deviceName = ip_settings[key]['network']
             nic.device.backing.useAutoDetect = False
             nic.device.connectable = vim.vm.device.VirtualDevice.ConnectInfo()
             nic.device.connectable.startConnected = True
             nic.device.connectable.allowGuestControl = True
             devices.append(nic)
-    
+
             # guest NIC settings, i.e. 'adapter map'
             guest_map = vim.vm.customization.AdapterMapping()
             guest_map.adapter = vim.vm.customization.IPSettings()
             guest_map.adapter.ip = vim.vm.customization.FixedIp()
             guest_map.adapter.ip.ipAddress = str(ip_settings[key]['ip'])
             guest_map.adapter.subnetMask = str(ip_settings[key]['subnet_mask'])
-            
+
             # these may not be set for certain IPs, e.g. storage IPs
             try:
                 guest_map.adapter.gateway = ip_settings[key]['gateway']
             except:
                 pass
-    
+
             try:
                 guest_map.adapter.dnsDomain = self.config['domain']
             except:
@@ -243,7 +273,10 @@ class EZMomi(object):
         clonespec.template = False
 
         # fire the clone task
-        tasks = [template_vm.Clone(folder=destfolder, name=self.config['hostname'], spec=clonespec)]
+        tasks = [template_vm.Clone(folder=destfolder,
+                                   name=self.config['hostname'],
+                                   spec=clonespec
+                                   )]
         result = self.WaitForTasks(tasks)
 
         self.send_email()
@@ -267,18 +300,18 @@ class EZMomi(object):
     def send_email(self):
         import smtplib
         from email.mime.text import MIMEText
-    
+
         # get user who ran this script
         me = os.getenv('USER')
 
         email_body = 'Your VM is ready!'
         msg = MIMEText(email_body)
         msg['Subject'] = '%s - VM deploy complete' % self.config['hostname']
-        msg['From'] = self.config['mailfrom'] 
+        msg['From'] = self.config['mailfrom']
         msg['To'] = me
-    
+
         s = smtplib.SMTP('localhost')
-        s.sendmail(self.config['mailfrom'] , [me], msg.as_string())
+        s.sendmail(self.config['mailfrom'], [me], msg.as_string())
         s.quit()
 
     '''
@@ -286,7 +319,8 @@ class EZMomi(object):
     '''
     def get_obj(self, vimtype, name):
         obj = None
-        container = self.content.viewManager.CreateContainerView(self.content.rootFolder, vimtype, True)
+        container = self.content.viewManager.CreateContainerView(
+            self.content.rootFolder, vimtype, True)
         for c in container.view:
             if c.name == name:
                 obj = c
@@ -304,17 +338,20 @@ class EZMomi(object):
         taskList = [str(task) for task in tasks]
 
         # Create filter
-        objSpecs = [vmodl.query.PropertyCollector.ObjectSpec(obj=task) for task in tasks]
-        propSpec = vmodl.query.PropertyCollector.PropertySpec(type=vim.Task, pathSet=[], all=True)
+        objSpecs = [vmodl.query.PropertyCollector.ObjectSpec(
+            obj=task) for task in tasks]
+        propSpec = vmodl.query.PropertyCollector.PropertySpec(
+            type=vim.Task, pathSet=[], all=True)
         filterSpec = vmodl.query.PropertyCollector.FilterSpec()
         filterSpec.objectSet = objSpecs
         filterSpec.propSet = [propSpec]
         filter = pc.CreateFilter(filterSpec, True)
-        
+
         try:
             version, state = None, None
-        
-            # Loop looking for updates till the state moves to a completed state.
+
+            # Loop looking for updates till the state moves to a
+            # completed state.
             while len(taskList):
                 update = pc.WaitForUpdates(version)
                 for filterSet in update.filterSet:
@@ -327,10 +364,10 @@ class EZMomi(object):
                                 state = change.val
                             else:
                                 continue
-                            
+
                             if not str(task) in taskList:
                                 continue
-                            
+
                             if state == vim.TaskInfo.State.success:
                                 # Remove task from taskList
                                 taskList.remove(str(task))

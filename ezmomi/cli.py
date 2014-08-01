@@ -5,9 +5,12 @@ import argparse
 from params import add_params
 from ezmomi import EZMomi
 
+
 def cli():
     # Set up command line arguments
-    parser = argparse.ArgumentParser(description='Perform common vSphere API tasks')
+    parser = argparse.ArgumentParser(
+        description='Perform common vSphere API tasks'
+    )
     subparsers = parser.add_subparsers(help='Command', dest='mode')
 
     # set up each command section
@@ -18,9 +21,9 @@ def cli():
 
     # initialize ezmomi instance
     ez = EZMomi(**vars(args))
-    
+
     kwargs = vars(args)
-    
+
     # choose your adventure
     if kwargs['mode'] == 'list':
         ez.list_objects()
