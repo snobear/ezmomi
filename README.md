@@ -1,3 +1,5 @@
+![alt text](https://travis-ci.org/snobear/ezmomi.svg?branch=develop "travis build status")
+
 ezmomi
 ======
 
