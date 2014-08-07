@@ -290,10 +290,12 @@ class EZMomi(object):
                                    name=self.config['hostname'],
                                    spec=clonespec
                                    )]
+
         result = self.WaitForTasks(tasks)
+        vmobj = tasks[0].info.result
 
         if self.config['waitforip']:
-            uuid, ip = self._wait_for_ip(self.config['hostname'])
+            uuid, ip = self._wait_for_ip(vmobj)
             print "UUID: %s" % uuid
             print "IP: %s" % ip
 
@@ -336,32 +338,19 @@ class EZMomi(object):
 
         return fmap
 
-    def _wait_for_ip(self, hostname):
+    def _wait_for_ip(self, vmobj):
 
-        """ Poll a VM until it registers an IP address """
+        """ Poll a VirtualMachine object until it registers an IP address """
 
-        vimtype = "VirtualMachine"
-        vim_obj = "vim.%s" % vimtype
         uuid = None
         ip = None
         count = 0
 
-        while count <= 1000:
+        while count <= 300:
 
-            # TODO optimize search for the expected VM
-            try:
-                container = self.content.viewManager.CreateContainerView(
-                    self.content.rootFolder, [eval(vim_obj)], True)
-            except AttributeError,e :
-                print "%s" % e
-                sys.exit(1)
-
-            vm = [c for c in container.view if c.name == hostname]
-            if len(vm) < 1 or len(vm) > 1:
-                return None, None
-
-            uuid = vm[0].config.uuid
-            ip = vm[0].summary.guest.ipAddress
+            hostname = vmobj.name
+            uuid = vmobj.config.uuid
+            ip = vmobj.summary.guest.ipAddress
 
             if str(ip) != "None": 
                 break
