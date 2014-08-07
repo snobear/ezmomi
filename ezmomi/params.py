@@ -60,6 +60,12 @@ def add_params(subparsers):
         nargs='+',
     )
     clone_parser.add_argument(
+        '--dhcp',
+        action="store_true",
+        required=False,
+        help='Use DHCP instead of static IPs',
+    )
+    clone_parser.add_argument(
         '--cpus',
         type=int,
         help='Number of CPUs'

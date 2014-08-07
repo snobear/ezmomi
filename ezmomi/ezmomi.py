@@ -130,6 +130,7 @@ class EZMomi(object):
             print "{0:<20} {1:<20}".format(c._moId, c.name)
 
     def clone(self):
+
         self.config['hostname'] = self.config['hostname'].lower()
         self.config['mem'] = self.config['mem'] * 1024  # convert GB to MB
 
@@ -250,8 +251,10 @@ class EZMomi(object):
 
         # DNS settings
         globalip = vim.vm.customization.GlobalIPSettings()
-        globalip.dnsServerList = self.config['dns_servers']
-        globalip.dnsSuffixList = self.config['domain']
+
+        if not self.config['dhcp']:        
+            globalip.dnsServerList = self.config['dns_servers']
+            globalip.dnsSuffixList = self.config['domain']
 
         # Hostname settings
         ident = vim.vm.customization.LinuxPrep()
@@ -268,7 +271,9 @@ class EZMomi(object):
         clonespec = vim.vm.CloneSpec()
         clonespec.location = relospec
         clonespec.config = vmconf
-        clonespec.customization = customspec
+
+        if not self.config['dhcp']:        
+            clonespec.customization = customspec
         clonespec.powerOn = True
         clonespec.template = False
 
