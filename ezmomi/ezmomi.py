@@ -284,7 +284,49 @@ class EZMomi(object):
                                    )]
         result = self.WaitForTasks(tasks)
 
+        if self.config['waitforip']:
+            uuid, ip = self._wait_for_ip(self.config['hostname'])
+            print "UUID: %s" % uuid
+            print "IP: %s" % ip
+
         self.send_email()
+
+    def _wait_for_ip(self, hostname):
+
+        """ Poll a VM until it registers an IP address """
+
+        vimtype = "VirtualMachine"
+        vim_obj = "vim.%s" % vimtype
+        uuid = None
+        ip = None
+        count = 0
+
+        while not found or count <= 1000:
+
+            # TODO optimize search for the expected VM
+            try:
+                container = self.content.viewManager.CreateContainerView(
+                    self.content.rootFolder, [eval(vim_obj)], True)
+            except AttributeError,e :
+                print "%s" % e
+                sys.exit(1)
+
+            vm = [c for c in container.view if c.name == hostname]
+            if len(vm) < 1 or len(vm) > 1:
+                return None, None
+
+            uuid = vm[0].config.uuid
+            ip = vm[0].summary.guest.ipAddress
+
+            if str(ip) != "None": 
+                break
+            else:
+                print "Waiting for %s [%s] to obtain an ip address" % (hostname, uuid)
+                time.sleep(2)
+                count += 1
+
+        return uuid,ip
+
 
     def destroy(self):
         tasks = list()

@@ -66,6 +66,13 @@ def add_params(subparsers):
         help='Use DHCP instead of static IPs',
     )
     clone_parser.add_argument(
+        '--waitforip',
+        action="store_true",
+        required=False,
+        default=False,
+        help='Wait for the system to obtain and IP address',
+    )
+    clone_parser.add_argument(
         '--cpus',
         type=int,
         help='Number of CPUs'
