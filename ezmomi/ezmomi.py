@@ -127,6 +127,7 @@ class EZMomi(object):
         print "{0:<20} {1:<20}".format('MOID', 'Name')
 
         for c in container.view:
+            import epdb; epdb.st()
             print "{0:<20} {1:<20}".format(c._moId, c.name)
 
     def clone(self):
@@ -277,6 +278,13 @@ class EZMomi(object):
         clonespec.powerOn = True
         clonespec.template = False
 
+        # Override the destination folder if user defined
+        if "folder" in self.config:
+            foldermap = self._get_folder_map()
+            if self.config['folder'] in foldermap:
+                folder = self.config['folder']
+                destfolder = foldermap[folder]
+
         # fire the clone task
         tasks = [template_vm.Clone(folder=destfolder,
                                    name=self.config['hostname'],
@@ -290,6 +298,43 @@ class EZMomi(object):
             print "IP: %s" % ip
 
         self.send_email()
+
+    def _get_folder_map(self):
+
+        """ Return a mapping of full folder paths to folder objects """
+
+        def buildpath(folder_map, folder):
+            """ Recursively build out a folderpath """
+            fullpath = folder
+
+            if hasattr(folder_map[folder], "parent"):
+                parentname = folder_map[folder].parent.name
+                if not parentname in folder_map:
+                    pass
+                else:
+                    tpath = buildpath(folder_map, parentname)
+                    fullpath = os.path.join(tpath, fullpath)
+
+            return fullpath
+
+        folder_map = {}
+        container = self.content.viewManager.CreateContainerView(
+            self.content.rootFolder, [eval("vim.Folder")], True)
+
+        # make first pass map
+        for vf in container.view:
+            name = vf.name
+            folder_map[str(name)] = vf
+
+        # make final map
+        fmap = {}
+        for k,v in folder_map.iteritems():
+            fullpath = buildpath(folder_map, k)
+            if not fullpath.startswith('/'):
+                fullpath = '/' + fullpath
+            fmap[fullpath] = v
+
+        return fmap
 
     def _wait_for_ip(self, hostname):
 

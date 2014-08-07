@@ -83,6 +83,11 @@ def add_params(subparsers):
         help='Memory in GB'
     )
     clone_parser.add_argument(
+        '--folder',
+        type=str,
+        help='Destination folder for the new VM'
+    )
+    clone_parser.add_argument(
         '--domain',
         type=str,
         help='Domain, e.g. "example.com"'
