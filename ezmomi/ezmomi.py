@@ -301,7 +301,7 @@ class EZMomi(object):
         ip = None
         count = 0
 
-        while not found or count <= 1000:
+        while count <= 1000:
 
             # TODO optimize search for the expected VM
             try:
