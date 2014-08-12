@@ -285,19 +285,34 @@ class EZMomi(object):
                 folder = self.config['folder']
                 destfolder = foldermap[folder]
 
-        # fire the clone task
-        tasks = [template_vm.Clone(folder=destfolder,
-                                   name=self.config['hostname'],
-                                   spec=clonespec
-                                   )]
+        tasks = []
+        if self.config['dhcp'] and self.config['count']:
+            for x in range(0, self.config['count']):
+                if '%s' in self.config['hostname']:
+                    hostname = self.config['hostname'] % x
+                else:
+                    hostname = self.config['hostname'] + "-%s" % x
+                tasks.append(template_vm.Clone(folder=destfolder,
+                                                name=hostname,
+                                                spec=clonespec))
+        else:
+            # fire the clone task
+            tasks = [template_vm.Clone(folder=destfolder,
+                                       name=self.config['hostname'],
+                                       spec=clonespec
+                                       )]
 
         result = self.WaitForTasks(tasks)
-        vmobj = tasks[0].info.result
+        vmobjs = [x.info.result for x in tasks]
 
         if self.config['waitforip']:
-            uuid, ip = self._wait_for_ip(vmobj)
-            print "UUID: %s" % uuid
-            print "IP: %s" % ip
+            for vmobj in vmobjs:
+                self._wait_for_ip(vmobj)
+            print "{0:<20} {1:<20} {2:<20}".format("Name", "IP", "UUID")
+            for vmobj in vmobjs:
+                ip = str(vmobj.summary.guest.ipAddress)
+                uuid = str(vmobj.config.uuid)
+                print "{0:<20} {1:<20} {2:<20}".format(vmobj.name, ip, uuid)
 
         self.send_email()
 
@@ -342,24 +357,20 @@ class EZMomi(object):
 
         """ Poll a VirtualMachine object until it registers an IP address """
 
-        uuid = None
         ip = None
         count = 0
 
         while count <= 300:
 
             hostname = vmobj.name
-            uuid = vmobj.config.uuid
             ip = vmobj.summary.guest.ipAddress
 
             if str(ip) != "None": 
                 break
             else:
-                print "Waiting for %s [%s] to obtain an ip address" % (hostname, uuid)
+                print "Waiting for %s to obtain an ip address" % hostname
                 time.sleep(2)
                 count += 1
-
-        return uuid,ip
 
 
     def destroy(self):
@@ -367,7 +378,7 @@ class EZMomi(object):
         print "Finding VM named %s..." % self.config['name']
         vm = self.get_obj([vim.VirtualMachine], self.config['name'])
 
-        # need to shut the VM down before destorying it
+        # need to shut the VM down before destroying it
         if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOn:
             tasks.append(vm.PowerOff())
 

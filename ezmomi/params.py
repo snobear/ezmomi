@@ -88,6 +88,11 @@ def add_params(subparsers):
         help='Destination folder for the new VM'
     )
     clone_parser.add_argument(
+        '--count',
+        type=int,
+        help='Number of VMs to launch [dhcp only]'
+    )
+    clone_parser.add_argument(
         '--domain',
         type=str,
         help='Domain, e.g. "example.com"'
