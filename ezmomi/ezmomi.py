@@ -127,7 +127,6 @@ class EZMomi(object):
         print "{0:<20} {1:<20}".format('MOID', 'Name')
 
         for c in container.view:
-            import epdb; epdb.st()
             print "{0:<20} {1:<20}".format(c._moId, c.name)
 
     def clone(self):
@@ -305,14 +304,15 @@ class EZMomi(object):
         result = self.WaitForTasks(tasks)
         vmobjs = [x.info.result for x in tasks]
 
-        if self.config['waitforip']:
-            for vmobj in vmobjs:
-                self._wait_for_ip(vmobj)
-            print "{0:<20} {1:<20} {2:<20}".format("Name", "IP", "UUID")
-            for vmobj in vmobjs:
-                ip = str(vmobj.summary.guest.ipAddress)
-                uuid = str(vmobj.config.uuid)
-                print "{0:<20} {1:<20} {2:<20}".format(vmobj.name, ip, uuid)
+        if 'waitforip' in self.config:
+            if self.config['waitforip']:
+                for vmobj in vmobjs:
+                    self._wait_for_ip(vmobj)
+                print "{0:<20} {1:<20} {2:<20}".format("Name", "IP", "UUID")
+                for vmobj in vmobjs:
+                    ip = str(vmobj.summary.guest.ipAddress)
+                    uuid = str(vmobj.config.uuid)
+                    print "{0:<20} {1:<20} {2:<20}".format(vmobj.name, ip, uuid)
 
         self.send_email()
 
