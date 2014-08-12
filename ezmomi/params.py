@@ -85,6 +85,8 @@ def add_params(subparsers):
     clone_parser.add_argument(
         '--folder',
         type=str,
+        required=False,
+        default='/',
         help='Destination folder for the new VM'
     )
     clone_parser.add_argument(
