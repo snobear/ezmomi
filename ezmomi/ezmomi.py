@@ -64,8 +64,8 @@ class EZMomi(object):
                   'specify the config file path by setting the EZMOMI_CONFIG '   \
                   'environment variable.'
             sys.exit(1)
-        except Exception:
-            print 'Unable to read config file.  YAML syntax issue, perhaps?'
+        except Exception, e:
+            print 'Unable to read config file.  YAML syntax issue, perhaps? \n %s' % e
             sys.exit(1)
 
         # Handle empty configs

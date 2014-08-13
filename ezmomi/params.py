@@ -3,12 +3,37 @@ Command line option definitions
 '''
 
 
+def add_common_params(parser):
+    parser.add_argument(
+        '--server',
+        type=str,
+        help='vCenter server',
+    )
+    parser.add_argument(
+        '--port',
+        type=str,
+        default='443',
+        help='vCenter server port',
+    )
+    parser.add_argument(
+        '--username',
+        type=str,
+        help='vCenter username',
+    )
+    parser.add_argument(
+        '--password',
+        type=str,
+        help='vCenter password',
+    )
+
 def add_params(subparsers):
     # list
     list_parser = subparsers.add_parser(
         'list',
         help='List VMware objects on your VMware server'
     )
+
+    add_common_params(list_parser)
 
     list_parser.add_argument(
         '--type',
@@ -21,27 +46,9 @@ def add_params(subparsers):
         'clone',
         help='Clone a VM template to a new VM'
     )
-    clone_parser.add_argument(
-        '--server',
-        type=str,
-        help='vCenter server',
-    )
-    clone_parser.add_argument(
-        '--port',
-        type=str,
-        default='443',
-        help='vCenter server port',
-    )
-    clone_parser.add_argument(
-        '--username',
-        type=str,
-        help='vCenter username',
-    )
-    clone_parser.add_argument(
-        '--password',
-        type=str,
-        help='vCenter password',
-    )
+
+    add_common_params(clone_parser)
+
     clone_parser.add_argument(
         '--template',
         type=str,
@@ -122,6 +129,7 @@ def add_params(subparsers):
         'destroy',
         help='Destroy/delete a Virtual Machine'
     )
+    add_common_params(destroy_parser)
     destroy_parser.add_argument(
         '--name',
         required=True,
