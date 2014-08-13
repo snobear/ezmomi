@@ -127,25 +127,3 @@ def add_params(subparsers):
         required=True,
         help='VM name (case-sensitive)'
     )
-    clone_parser.add_argument(
-        '--server',
-        type=str,
-        help='vCenter server',
-    )
-    clone_parser.add_argument(
-        '--port',
-        type=str,
-        default='443',
-        help='vCenter server port',
-    )
-    clone_parser.add_argument(
-        '--username',
-        type=str,
-        help='vCenter username',
-    )
-    clone_parser.add_argument(
-        '--password',
-        type=str,
-        help='vCenter password',
-    )
-
