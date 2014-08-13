@@ -64,9 +64,13 @@ class EZMomi(object):
                   'specify the config file path by setting the EZMOMI_CONFIG '   \
                   'environment variable.'
             sys.exit(1)
-        except Exception:
-            print 'Unable to read config file.  YAML syntax issue, perhaps?'
+        except Exception, e:
+            print 'Unable to read config file.  YAML syntax issue, perhaps? \n %s' % e
             sys.exit(1)
+
+        # Handle empty configs
+        if not config:
+            config = {}
 
         # Check all required values were supplied either via command line
         # or config. override defaults from config.yml with any supplied
@@ -75,7 +79,7 @@ class EZMomi(object):
         for key, value in kwargs.items():
             if value:
                 config[key] = value
-            elif (value is None) and (key not in config):
+            elif (value is None) and (key not in config) and key is not "ips" and key is not "domain":
                 # compile list of parameters that were not set
                 notset.append(key)
 
@@ -130,6 +134,7 @@ class EZMomi(object):
             print "{0:<20} {1:<20}".format(c._moId, c.name)
 
     def clone(self):
+
         self.config['hostname'] = self.config['hostname'].lower()
         self.config['mem'] = self.config['mem'] * 1024  # convert GB to MB
 
@@ -142,42 +147,62 @@ class EZMomi(object):
         ip_settings = list()
 
         # Get network settings for each IP
-        for key, ip_string in enumerate(self.config['ips']):
+        if 'ips' in self.config:
+            for key, ip_string in enumerate(self.config['ips']):
 
-            # convert ip from string to the 'IPAddress' type
-            ip = IPAddress(ip_string)
+                # convert ip from string to the 'IPAddress' type
+                ip = IPAddress(ip_string)
 
-            # determine network this IP is in
-            for network in self.config['networks']:
-                if ip in IPNetwork(network):
-                    self.config['networks'][network]['ip'] = ip
-                    ipnet = IPNetwork(network)
-                    self.config['networks'][network]['subnet_mask'] = str(
-                        ipnet.netmask
-                    )
-                    ip_settings.append(self.config['networks'][network])
+                # determine network this IP is in
+                for network in self.config['networks']:
+                    if ip in IPNetwork(network):
+                        self.config['networks'][network]['ip'] = ip
+                        ipnet = IPNetwork(network)
+                        self.config['networks'][network]['subnet_mask'] = str(
+                            ipnet.netmask
+                        )
+                        ip_settings.append(self.config['networks'][network])
 
-            # throw an error if we couldn't find a network for this ip
-            if not any(d['ip'] == ip for d in ip_settings):
-                print "I don't know what network %s is in.  You can supply " \
-                      "settings for this network in config.yml." % ip_string
-                sys.exit(1)
+                # throw an error if we couldn't find a network for this ip
+                if not any(d['ip'] == ip for d in ip_settings):
+                    print "I don't know what network %s is in.  You can supply " \
+                          "settings for this network in config.yml." % ip_string
+                    sys.exit(1)
 
         # network to place new VM in
-        self.get_obj([vim.Network], ip_settings[0]['network'])
-        datacenter = self.get_obj([vim.Datacenter],
-                                  ip_settings[0]['datacenter']
-                                  )
+        if not self.config['dhcp']:
+            self.get_obj([vim.Network], ip_settings[0]['network'])
+
+            cluster = self.get_obj([vim.ClusterComputeResource],
+                                   ip_settings[0]['cluster']
+                                   )
+
+            datacenter = self.get_obj([vim.Datacenter],
+                                    ip_settings[0]['datacenter']
+                                    )
+
+            datastore = self.get_obj([vim.Datastore], 
+                                    ip_settings[0]['datastore']
+                                   )
+        else:
+            cluster = self.get_obj([vim.ClusterComputeResource],
+                                   self.config['cluster']
+                                   )
+
+            datacenter = self.get_obj([vim.Datacenter],
+                                    self.config['datacenter']
+                                    )
+
+            datastore = self.get_obj([vim.Datastore], 
+                                    self.config['datastore']
+                                    )
+
 
         # get the folder where VMs are kept for this datacenter
         destfolder = datacenter.vmFolder
 
-        cluster = self.get_obj([vim.ClusterComputeResource],
-                               ip_settings[0]['cluster']
-                               )
         # use same root resource pool that my desired cluster uses
         resource_pool = cluster.resourcePool
-        datastore = self.get_obj([vim.Datastore], ip_settings[0]['datastore'])
         template_vm = self.get_obj([vim.VirtualMachine],
                                    self.config['template']
                                    )
@@ -250,12 +275,15 @@ class EZMomi(object):
 
         # DNS settings
         globalip = vim.vm.customization.GlobalIPSettings()
-        globalip.dnsServerList = self.config['dns_servers']
-        globalip.dnsSuffixList = self.config['domain']
+
+        if not self.config['dhcp']:        
+            globalip.dnsServerList = self.config['dns_servers']
+            globalip.dnsSuffixList = self.config['domain']
 
         # Hostname settings
         ident = vim.vm.customization.LinuxPrep()
-        ident.domain = self.config['domain']
+        if "domain" in self.config:
+            ident.domain = self.config['domain']
         ident.hostName = vim.vm.customization.FixedName()
         ident.hostName.name = self.config['hostname']
 
@@ -268,25 +296,115 @@ class EZMomi(object):
         clonespec = vim.vm.CloneSpec()
         clonespec.location = relospec
         clonespec.config = vmconf
-        clonespec.customization = customspec
+
+        if not self.config['dhcp']:        
+            clonespec.customization = customspec
         clonespec.powerOn = True
         clonespec.template = False
 
-        # fire the clone task
-        tasks = [template_vm.Clone(folder=destfolder,
-                                   name=self.config['hostname'],
-                                   spec=clonespec
-                                   )]
-        result = self.WaitForTasks(tasks)
+        # Override the destination folder if user defined
+        if "folder" in self.config:
+            foldermap = self._get_folder_map()
+            if self.config['folder'] in foldermap:
+                folder = self.config['folder']
+                destfolder = foldermap[folder]
 
-        self.send_email()
+        tasks = []
+        if self.config['dhcp'] and self.config['count']:
+            for x in range(0, self.config['count']):
+                if '%s' in self.config['hostname']:
+                    hostname = self.config['hostname'] % x
+                else:
+                    hostname = self.config['hostname'] + "-%s" % x
+                tasks.append(template_vm.Clone(folder=destfolder,
+                                                name=hostname,
+                                                spec=clonespec))
+        else:
+            # fire the clone task
+            tasks = [template_vm.Clone(folder=destfolder,
+                                       name=self.config['hostname'],
+                                       spec=clonespec
+                                       )]
+
+        result = self.WaitForTasks(tasks)
+        vmobjs = [x.info.result for x in tasks]
+
+        if 'waitforip' in self.config:
+            if self.config['waitforip']:
+                for vmobj in vmobjs:
+                    self._wait_for_ip(vmobj)
+                print "{0:<20} {1:<20} {2:<20}".format("Name", "IP", "UUID")
+                for vmobj in vmobjs:
+                    ip = str(vmobj.summary.guest.ipAddress)
+                    uuid = str(vmobj.config.uuid)
+                    print "{0:<20} {1:<20} {2:<20}".format(vmobj.name, ip, uuid)
+
+        if "mailfrom" in self.config:
+            self.send_email()
+
+    def _get_folder_map(self):
+
+        """ Return a mapping of full folder paths to folder objects """
+
+        def buildpath(folder_map, folder):
+            """ Recursively build out a folderpath """
+            fullpath = folder
+
+            if hasattr(folder_map[folder], "parent"):
+                parentname = folder_map[folder].parent.name
+                if not parentname in folder_map:
+                    pass
+                else:
+                    tpath = buildpath(folder_map, parentname)
+                    fullpath = os.path.join(tpath, fullpath)
+
+            return fullpath
+
+        folder_map = {}
+        container = self.content.viewManager.CreateContainerView(
+            self.content.rootFolder, [eval("vim.Folder")], True)
+
+        # make first pass map
+        for vf in container.view:
+            name = vf.name
+            folder_map[str(name)] = vf
+
+        # make final map
+        fmap = {}
+        for k,v in folder_map.iteritems():
+            fullpath = buildpath(folder_map, k)
+            if not fullpath.startswith('/'):
+                fullpath = '/' + fullpath
+            fmap[fullpath] = v
+
+        return fmap
+
+    def _wait_for_ip(self, vmobj):
+
+        """ Poll a VirtualMachine object until it registers an IP address """
+
+        ip = None
+        count = 0
+
+        while count <= 300:
+
+            hostname = vmobj.name
+            ip = vmobj.summary.guest.ipAddress
+
+            if str(ip) != "None": 
+                break
+            else:
+                print "Waiting for %s to obtain an ip address" % hostname
+                time.sleep(2)
+                count += 1
+
 
     def destroy(self):
         tasks = list()
         print "Finding VM named %s..." % self.config['name']
         vm = self.get_obj([vim.VirtualMachine], self.config['name'])
 
-        # need to shut the VM down before destorying it
+        # need to shut the VM down before destroying it
         if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOn:
             tasks.append(vm.PowerOff())
 

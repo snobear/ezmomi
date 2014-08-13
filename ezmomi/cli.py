@@ -2,6 +2,7 @@
  Command line definitions for ezmomi
 '''
 import argparse
+from params import add_common_params
 from params import add_params
 from ezmomi import EZMomi
 
@@ -11,6 +12,7 @@ def cli():
     parser = argparse.ArgumentParser(
         description='Perform common vSphere API tasks'
     )
+
     subparsers = parser.add_subparsers(help='Command', dest='mode')
 
     # set up each command section
