@@ -29,6 +29,7 @@ def add_params(subparsers):
     clone_parser.add_argument(
         '--port',
         type=str,
+        default='443',
         help='vCenter server port',
     )
     clone_parser.add_argument(
@@ -54,6 +55,7 @@ def add_params(subparsers):
     )
     clone_parser.add_argument(
         '--ips',
+        required=False,
         type=str,
         help='Static IPs of new host, separated by a space. '
              'List primary IP first.',
@@ -98,6 +100,21 @@ def add_params(subparsers):
         '--domain',
         type=str,
         help='Domain, e.g. "example.com"'
+    )
+    clone_parser.add_argument(
+        '--datacenter',
+        type=str,
+        help='Datacenter'
+    )
+    clone_parser.add_argument(
+        '--cluster',
+        type=str,
+        help='Cluster'
+    )
+    clone_parser.add_argument(
+        '--datastore',
+        type=str,
+        help='Datastore'
     )
 
     # destroy

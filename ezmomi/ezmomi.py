@@ -68,6 +68,10 @@ class EZMomi(object):
             print 'Unable to read config file.  YAML syntax issue, perhaps?'
             sys.exit(1)
 
+        # Handle empty configs
+        if not config:
+            config = {}
+
         # Check all required values were supplied either via command line
         # or config. override defaults from config.yml with any supplied
         # command line arguments
@@ -75,7 +79,7 @@ class EZMomi(object):
         for key, value in kwargs.items():
             if value:
                 config[key] = value
-            elif (value is None) and (key not in config):
+            elif (value is None) and (key not in config) and key is not "ips" and key is not "domain":
                 # compile list of parameters that were not set
                 notset.append(key)
 
@@ -143,42 +147,62 @@ class EZMomi(object):
         ip_settings = list()
 
         # Get network settings for each IP
-        for key, ip_string in enumerate(self.config['ips']):
+        if 'ips' in self.config:
+            for key, ip_string in enumerate(self.config['ips']):
 
-            # convert ip from string to the 'IPAddress' type
-            ip = IPAddress(ip_string)
+                # convert ip from string to the 'IPAddress' type
+                ip = IPAddress(ip_string)
 
-            # determine network this IP is in
-            for network in self.config['networks']:
-                if ip in IPNetwork(network):
-                    self.config['networks'][network]['ip'] = ip
-                    ipnet = IPNetwork(network)
-                    self.config['networks'][network]['subnet_mask'] = str(
-                        ipnet.netmask
-                    )
-                    ip_settings.append(self.config['networks'][network])
+                # determine network this IP is in
+                for network in self.config['networks']:
+                    if ip in IPNetwork(network):
+                        self.config['networks'][network]['ip'] = ip
+                        ipnet = IPNetwork(network)
+                        self.config['networks'][network]['subnet_mask'] = str(
+                            ipnet.netmask
+                        )
+                        ip_settings.append(self.config['networks'][network])
 
-            # throw an error if we couldn't find a network for this ip
-            if not any(d['ip'] == ip for d in ip_settings):
-                print "I don't know what network %s is in.  You can supply " \
-                      "settings for this network in config.yml." % ip_string
-                sys.exit(1)
+                # throw an error if we couldn't find a network for this ip
+                if not any(d['ip'] == ip for d in ip_settings):
+                    print "I don't know what network %s is in.  You can supply " \
+                          "settings for this network in config.yml." % ip_string
+                    sys.exit(1)
 
         # network to place new VM in
-        self.get_obj([vim.Network], ip_settings[0]['network'])
-        datacenter = self.get_obj([vim.Datacenter],
-                                  ip_settings[0]['datacenter']
-                                  )
+        if not self.config['dhcp']:
+            self.get_obj([vim.Network], ip_settings[0]['network'])
+
+            cluster = self.get_obj([vim.ClusterComputeResource],
+                                   ip_settings[0]['cluster']
+                                   )
+
+            datacenter = self.get_obj([vim.Datacenter],
+                                    ip_settings[0]['datacenter']
+                                    )
+
+            datastore = self.get_obj([vim.Datastore], 
+                                    ip_settings[0]['datastore']
+                                   )
+        else:
+            cluster = self.get_obj([vim.ClusterComputeResource],
+                                   self.config['cluster']
+                                   )
+
+            datacenter = self.get_obj([vim.Datacenter],
+                                    self.config['datacenter']
+                                    )
+
+            datastore = self.get_obj([vim.Datastore], 
+                                    self.config['datastore']
+                                    )
+
 
         # get the folder where VMs are kept for this datacenter
         destfolder = datacenter.vmFolder
 
-        cluster = self.get_obj([vim.ClusterComputeResource],
-                               ip_settings[0]['cluster']
-                               )
         # use same root resource pool that my desired cluster uses
         resource_pool = cluster.resourcePool
-        datastore = self.get_obj([vim.Datastore], ip_settings[0]['datastore'])
         template_vm = self.get_obj([vim.VirtualMachine],
                                    self.config['template']
                                    )
@@ -258,7 +282,8 @@ class EZMomi(object):
 
         # Hostname settings
         ident = vim.vm.customization.LinuxPrep()
-        ident.domain = self.config['domain']
+        if "domain" in self.config:
+            ident.domain = self.config['domain']
         ident.hostName = vim.vm.customization.FixedName()
         ident.hostName.name = self.config['hostname']
 
@@ -314,7 +339,8 @@ class EZMomi(object):
                     uuid = str(vmobj.config.uuid)
                     print "{0:<20} {1:<20} {2:<20}".format(vmobj.name, ip, uuid)
 
-        self.send_email()
+        if "mailfrom" in self.config:
+            self.send_email()
 
     def _get_folder_map(self):
 
