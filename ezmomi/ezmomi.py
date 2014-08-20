@@ -229,7 +229,13 @@ class EZMomi(object):
 
             # these may not be set for certain IPs, e.g. storage IPs
             try:
-                guest_map.adapter.gateway = ip_settings[key]['gateway']
+                if self.config['gateway'] == 'none':
+                    guest_map.adapter.gateway = ip_settings[key]['gateway']
+                else:
+                    if self.config['gateway'] == ip_settings[key]['gateway']:
+                        guest_map.adapter.gateway = self.config['gateway']
+                    #else:
+                    #   the default gateway is not set
             except:
                 pass
 
