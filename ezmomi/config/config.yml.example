@@ -1,6 +1,9 @@
 # config.yml
 # EZmomi
 
+# Mail support
+mailing: true
+
 # vCenter connection settings
 server: vcenter.example.com
 port: 443
