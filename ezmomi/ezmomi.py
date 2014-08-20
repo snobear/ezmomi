@@ -211,7 +211,8 @@ class EZMomi(object):
                                    )]
         result = self.WaitForTasks(tasks)
 
-        self.send_email()
+	if self.config['mailing']:
+        	self.send_email()
 
     def destroy(self):
         tasks = list()
