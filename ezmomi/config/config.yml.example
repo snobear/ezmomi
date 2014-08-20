@@ -2,7 +2,10 @@
 # EZmomi
 
 # Mail support
-mailing: true
+mail: true
+mailserver: localhost
+mailfrom:  ezmomi@example.com
+mailto: admin@example.com
 
 # vCenter connection settings
 server: vcenter.example.com
@@ -17,7 +20,6 @@ template: centos65
 domain: example
 
 dns_servers: ['8.8.8.8','8.8.4.4']
-mailfrom:  ezmomi@example.com
 
 # List your networks here
 networks:
