@@ -177,7 +177,12 @@ class EZMomi(object):
                                )
         # use same root resource pool that my desired cluster uses
         resource_pool = cluster.resourcePool
-        datastore = self.get_obj([vim.Datastore], ip_settings[0]['datastore'])
+
+        if self.config['datastore'] == 'none':
+            datastore = self.get_obj([vim.Datastore], ip_settings[0]['datastore'])
+        else:
+            datastore = self.get_obj([vim.Datastore], self.config['datastore'])
+
         template_vm = self.get_obj([vim.VirtualMachine],
                                    self.config['template']
                                    )
