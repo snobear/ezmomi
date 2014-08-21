@@ -279,14 +279,15 @@ class EZMomi(object):
                                    )]
         result = self.WaitForTasks(tasks)
 
-	if self.config['mail']:
-        	self.send_email()
+        # send notification email
+        if self.config['mail']:
+            self.send_email()
 
     def destroy(self):
         tasks = list()
 
         destroyed = 'no'
-        if self.config['silent']:
+        if 'silent' in self.config:
             destroyed = 'yes'
         else:
             destroyed = raw_input("Do you really want to destroy %s ? [yes/no] " % self.config['name'])
@@ -315,17 +316,29 @@ class EZMomi(object):
         import smtplib
         from email.mime.text import MIMEText
 
-        # get user who ran this script
-        me = os.getenv('USER')
+        if 'mailfrom' in self.config:
+            mailfrom = self.config['mailfrom']
+        else:
+            mailfrom = os.getenv('USER')  # user who ran this script
+
+        if 'mailto' in self.config:
+            mailto = self.config['mailto']
+        else:
+            mailto = os.getenv('USER')
+
+        if 'mailserver' in self.config:
+            mailserver = self.config['mailserver']
+        else:
+            mailserver = 'localhost'
 
         email_body = 'Your VM is ready!'
         msg = MIMEText(email_body)
         msg['Subject'] = '%s - VM deploy complete' % self.config['hostname']
-        msg['From'] = self.config['mailfrom']
-        msg['To'] = self.config['mailto']
+        msg['To'] = mailto
+        msg['From'] = mailfrom
 
-        s = smtplib.SMTP(self.config['mailserver'])
-        s.sendmail(self.config['mailfrom'], self.config['mailto'], msg.as_string())
+        s = smtplib.SMTP(mailserver)
+        s.sendmail(mailfrom, [mailto], msg.as_string())
         s.quit()
 
     '''

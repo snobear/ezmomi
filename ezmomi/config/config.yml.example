@@ -1,7 +1,7 @@
 # config.yml
-# EZmomi
+# ezmomi
 
-# Mail support
+# Mail setup for notifications
 mail: true
 mailserver: localhost
 mailfrom:  ezmomi@example.com
