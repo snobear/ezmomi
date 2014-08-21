@@ -217,7 +217,11 @@ class EZMomi(object):
         tasks = list()
 
         destroyed = 'no'
-        destroyed = raw_input("Do you really want to destroy %s ? [yes/no] " % self.config['name'])
+        if self.config['silent'] == 'true':
+            destroyed = 'yes'
+        else:
+            destroyed = raw_input("Do you really want to destroy %s ? [yes/no] " % self.config['name'])
+        
         if destroyed == 'yes':
             print "Finding VM named %s..." % self.config['name']
 

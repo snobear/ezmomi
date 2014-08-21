@@ -153,3 +153,9 @@ def add_params(subparsers):
         required=True,
         help='VM name (case-sensitive)'
     )
+    destroy_parser.add_argument(
+        '--silent',
+        type=str,
+        help='Silently destroy a VM (default is false and can be set to true)',
+        default="false"
+    )
