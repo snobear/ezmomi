@@ -87,7 +87,6 @@ def add_params(subparsers):
     )
     destroy_parser.add_argument(
         '--silent',
-        type=str,
         help='Silently destroy a VM (default is false and can be set to true)',
-        default="false"
+        action='store_true'
     )
