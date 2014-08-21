@@ -279,7 +279,8 @@ class EZMomi(object):
                                    )]
         result = self.WaitForTasks(tasks)
 
-        self.send_email()
+	if self.config['mail']:
+        	self.send_email()
 
     def destroy(self):
         tasks = list()
@@ -321,10 +322,10 @@ class EZMomi(object):
         msg = MIMEText(email_body)
         msg['Subject'] = '%s - VM deploy complete' % self.config['hostname']
         msg['From'] = self.config['mailfrom']
-        msg['To'] = me
+        msg['To'] = self.config['mailto']
 
-        s = smtplib.SMTP('localhost')
-        s.sendmail(self.config['mailfrom'], [me], msg.as_string())
+        s = smtplib.SMTP(self.config['mailserver'])
+        s.sendmail(self.config['mailfrom'], self.config['mailto'], msg.as_string())
         s.quit()
 
     '''

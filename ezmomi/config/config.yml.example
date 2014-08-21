@@ -1,6 +1,12 @@
 # config.yml
 # EZmomi
 
+# Mail support
+mail: true
+mailserver: localhost
+mailfrom:  ezmomi@example.com
+mailto: admin@example.com
+
 # vCenter connection settings
 server: vcenter.example.com
 port: 443
@@ -14,7 +20,6 @@ template: centos65
 domain: example
 
 dns_servers: ['8.8.8.8','8.8.4.4']
-mailfrom:  ezmomi@example.com
 
 # List your networks here
 networks:
