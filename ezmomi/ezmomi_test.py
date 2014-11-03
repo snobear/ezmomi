@@ -10,8 +10,7 @@ import ezmomi
 
 import os
 import sys
-import copy
-# import pytest
+from copy import deepcopy
 import tempfile
 import unittest
 import hashlib
@@ -41,23 +40,23 @@ class TestEZMomi(unittest.TestCase):
     def setUp(self):
         self._old_isfile = os.path.isfile
         self._old_exit = sys.exit
-        self.old_env = copy.deepcopy(os.environ)
+        self.old_env = deepcopy(os.environ)
 
     def tearDown(self):
         os.path.isfile = self._old_isfile
         sys.exit = self._old_exit
-        os.environ = copy.deepcopy(self.old_env)
+        os.environ = deepcopy(self.old_env)
 
     def test_find_config_name(self):
         cfg_dir = os.path.join(os.path.expanduser("~"), ".config/ezmomi")
         expected = os.path.join(cfg_dir, "config.yml")
-        actual = ezmomi.EZMomi().find_config_name()
+        actual = ezmomi.EZMomi.find_config_name()
         self.assertEqual(expected, actual)
 
         expected = '/tmp/config.yml'
         k = 'EZMOMI_CONFIG'
         os.environ.update({k: expected})
-        actual = ezmomi.EZMomi().find_config_name()
+        actual = ezmomi.EZMomi.find_config_name()
         self.assertEqual(expected, actual)
 
     def test_gen_default_example_config_name(self):
@@ -66,16 +65,16 @@ class TestEZMomi(unittest.TestCase):
             os.path.dirname(os.path.abspath(ezmomi.__file__)),
             "config/config.yml.example"
         )
-        actual = ezmomi.EZMomi().gen_default_example_config_name()
+        actual = ezmomi.EZMomi.gen_default_example_config_name()
         self.assertEqual(expected, actual)
 
     def test_gen_cfg_example(self):
         new_dir = '/tmp/.config/'
         new_file = os.path.join(tempfile.mktemp(prefix=new_dir, suffix='.yml'))
         ezmomi.sys.exit = new_exit
-        ezmomi.EZMomi().gen_cfg_example(new_file)
+        ezmomi.EZMomi.gen_cfg_example(new_file)
 
-        example_default = ezmomi.EZMomi().gen_default_example_config_name()
+        example_default = ezmomi.EZMomi.gen_default_example_config_name()
         expected = checksum_file(example_default)
         actual = checksum_file(new_file + '.example')
         self.assertEqual(expected, actual)
