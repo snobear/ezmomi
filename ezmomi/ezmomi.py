@@ -198,9 +198,14 @@ class EZMomi(object):
     def clone(self):
         self.config['hostname'] = self.config['hostname'].lower()
         self.config['mem'] = self.config['mem'] * 1024  # convert GB to MB
-        print("Cloning {template} to new host {hostname}...".format(
-            **self.config
-        ))
+        msg = " ".join([
+            "Cloning",
+            self.config.get('template'),
+            "to new host",
+            self.config.get('hostname'),
+            "...",
+        ])
+        print(msg)
         # initialize a list to hold our network settings
         if not 'networks' in self.config:
             return self.clone_as_template()
@@ -360,8 +365,6 @@ class EZMomi(object):
     def clone_as_template(self):
         self.config['hostname'] = self.config['hostname'].lower()
         self.config['mem'] *= 1024  # convert GB to MB
-        msg = "Cloning {template} to host {hostname}...".format(**self.config)
-        print(msg)
         ## we can choose target host randomly:
         # host = random.choice(self.config.get('hosts'))
         ## or not randomly
