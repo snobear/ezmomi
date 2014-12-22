@@ -193,6 +193,15 @@ class EZMomi(object):
         devices = []
         adaptermaps = []
 
+        # don't clone nic devices from template
+        for device in template_vm.config.hardware.device:
+            if hasattr(device, 'addressType'):
+                # this is a VirtualEthernetCard, so we'll delete it,
+                nic = vim.vm.device.VirtualDeviceSpec()
+                nic.operation = vim.vm.device.VirtualDeviceSpec.Operation.remove
+                nic.device = device
+                devices.append(nic)
+
         # create a Network device for each static IP
         for key, ip in enumerate(ip_settings):
             # VM device
