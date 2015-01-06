@@ -58,6 +58,8 @@ git clone git@github.com:snobear/ezmomi.git
 virtualenv --no-site-packages ezmomi
 cd ezmomi && source bin/activate
 pip install -r requirements.txt
+export PYTHONPATH=$PWD:$PYTHONPATH
+ezmomi --help
 ```
 
 ### Contributing
