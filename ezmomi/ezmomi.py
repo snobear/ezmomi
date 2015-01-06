@@ -193,6 +193,15 @@ class EZMomi(object):
         devices = []
         adaptermaps = []
 
+        # don't clone nic devices from template
+        for device in template_vm.config.hardware.device:
+            if hasattr(device, 'addressType'):
+                # this is a VirtualEthernetCard, so we'll delete it,
+                nic = vim.vm.device.VirtualDeviceSpec()
+                nic.operation = vim.vm.device.VirtualDeviceSpec.Operation.remove
+                nic.device = device
+                devices.append(nic)
+
         # create a Network device for each static IP
         for key, ip in enumerate(ip_settings):
             # VM device
@@ -279,20 +288,35 @@ class EZMomi(object):
                                    )]
         result = self.WaitForTasks(tasks)
 
-        self.send_email()
+        # send notification email
+        if self.config['mail']:
+            self.send_email()
 
     def destroy(self):
         tasks = list()
-        print "Finding VM named %s..." % self.config['name']
-        vm = self.get_obj([vim.VirtualMachine], self.config['name'])
 
-        # need to shut the VM down before destorying it
-        if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOn:
-            tasks.append(vm.PowerOff())
+        destroyed = 'no'
+        if 'silent' in self.config:
+            destroyed = 'yes'
+        else:
+            destroyed = raw_input("Do you really want to destroy %s ? [yes/no] " % self.config['name'])
 
-        tasks.append(vm.Destroy())
-        print "Destroying %s..." % self.config['name']
-        result = self.WaitForTasks(tasks)
+        if destroyed == 'yes':
+            print "Finding VM named %s..." % self.config['name']
+
+            vm = self.get_obj([vim.VirtualMachine], self.config['name'])
+
+            try:
+                # need to shut the VM down before destorying it
+                if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOn:
+                    tasks.append(vm.PowerOff())
+            except AttributeError:
+                print "Error: VM '%s' does not exist" % self.config['name']
+                sys.exit(1)
+
+            tasks.append(vm.Destroy())
+            print "Destroying %s..." % self.config['name']
+            result = self.WaitForTasks(tasks)
 
     '''
      Helper methods
@@ -301,17 +325,29 @@ class EZMomi(object):
         import smtplib
         from email.mime.text import MIMEText
 
-        # get user who ran this script
-        me = os.getenv('USER')
+        if 'mailfrom' in self.config:
+            mailfrom = self.config['mailfrom']
+        else:
+            mailfrom = os.getenv('USER')  # user who ran this script
+
+        if 'mailto' in self.config:
+            mailto = self.config['mailto']
+        else:
+            mailto = os.getenv('USER')
+
+        if 'mailserver' in self.config:
+            mailserver = self.config['mailserver']
+        else:
+            mailserver = 'localhost'
 
         email_body = 'Your VM is ready!'
         msg = MIMEText(email_body)
         msg['Subject'] = '%s - VM deploy complete' % self.config['hostname']
-        msg['From'] = self.config['mailfrom']
-        msg['To'] = me
+        msg['To'] = mailto
+        msg['From'] = mailfrom
 
-        s = smtplib.SMTP('localhost')
-        s.sendmail(self.config['mailfrom'], [me], msg.as_string())
+        s = smtplib.SMTP(mailserver)
+        s.sendmail(mailfrom, [mailto], msg.as_string())
         s.quit()
 
     '''
