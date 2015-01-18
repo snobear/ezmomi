@@ -16,6 +16,8 @@ class EZMomi(object):
         # load up our configs and connect to the vSphere server
         self.config = self.get_configs(kwargs)
         self.connect()
+        self._columns_two = "{0:<20} {1:<20}"
+        self._columns_three = "{0:<20} {1:<20} {2:<20}"
 
     def get_configs(self, kwargs):
         default_cfg_dir = "%s/.config/ezmomi" % os.path.expanduser("~")
@@ -124,10 +126,16 @@ class EZMomi(object):
 
         # print header line
         print "%s list" % vimtype
-        print "{0:<20} {1:<20}".format('MOID', 'Name')
+        if vimtype == "VirtualMachine":
+            print self._columns_three.format('MOID', 'Name', 'Status')
+        else:
+            print self._columns_two.format('MOID', 'Name')
 
         for c in container.view:
-            print "{0:<20} {1:<20}".format(c._moId, c.name)
+            if vimtype == "VirtualMachine":
+                print self._columns_three.format(c._moId, c.name, c.runtime.powerState)
+            else:
+                print self._columns_two.format(c._moId, c.name)
 
     def clone(self):
         self.config['hostname'] = self.config['hostname'].lower()
@@ -317,6 +325,16 @@ class EZMomi(object):
             tasks.append(vm.Destroy())
             print "Destroying %s..." % self.config['name']
             result = self.WaitForTasks(tasks)
+
+    def status(self):
+        vm = self.get_obj([vim.VirtualMachine], self.config['name'])
+
+        try:
+            print self._columns_two.format(vm.name, vm.runtime.powerState)
+
+        except AttributeError:
+            print "Error: VM '%s' does not exist" % self.config['name']
+            sys.exit(1)
 
     '''
      Helper methods

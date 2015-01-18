@@ -90,3 +90,14 @@ def add_params(subparsers):
         help='Silently destroy a VM (default is false and can be set to true)',
         action='store_true'
     )
+    
+    # status
+    status_parser = subparsers.add_parser(
+        'status',
+        help="Get a Virtual Machine's power status"
+    )
+    status_parser.add_argument(
+        '--name',
+        required=True,
+        help='VM name (case-sensitive)'
+    )
