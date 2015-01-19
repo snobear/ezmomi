@@ -139,11 +139,12 @@ class EZMomi(object):
 
     def clone(self):
         self.config['hostname'] = self.config['hostname'].lower()
-        self.config['mem'] = self.config['mem'] * 1024  # convert GB to MB
+        self.config['mem'] = int(self.config['mem'] * 1024)  # convert GB to MB
 
-        print "Cloning %s to new host %s..." % (
+        print "Cloning %s to new host %s with %sMB RAM..." % (
             self.config['template'],
-            self.config['hostname']
+            self.config['hostname'],
+            self.config['mem']
         )
 
         # initialize a list to hold our network settings
