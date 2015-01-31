@@ -31,3 +31,5 @@ def cli():
         ez.clone()
     elif kwargs['mode'] == 'destroy':
         ez.destroy()
+    elif kwargs['mode'] == 'status':
+        ez.status()
