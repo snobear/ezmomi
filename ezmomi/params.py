@@ -66,7 +66,7 @@ def add_params(subparsers):
     )
     clone_parser.add_argument(
         '--mem',
-        type=int,
+        type=float,
         help='Memory in GB'
     )
     clone_parser.add_argument(
