@@ -32,7 +32,7 @@ Guest shutdown
 ezmomi shutdown --name test01
 ```
 
-This command alls back to powerOff if VMware guest tools are not installed/available.
+This command falls back to powerOff if VMware guest tools are not installed/available.
 
 Power On/Off
 
