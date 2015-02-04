@@ -90,7 +90,6 @@ def add_params(subparsers):
         help='Silently destroy a VM (default is false and can be set to true)',
         action='store_true'
     )
-<<<<<<< HEAD
 
     # status
     status_parser = subparsers.add_parser(
@@ -135,5 +134,3 @@ def add_params(subparsers):
         required=True,
         help='VM name (case-sensitive)'
     )
-=======
->>>>>>> master

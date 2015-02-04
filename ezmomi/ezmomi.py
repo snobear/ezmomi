@@ -309,7 +309,6 @@ class EZMomi(object):
             destroyed = raw_input("Do you really want to destroy %s ? [yes/no] " % self.config['name'])
 
         if destroyed == 'yes':
-<<<<<<< HEAD
             vm = self.get_vm_failfast(self.config['name'], True)
             # need to shut the VM down before destroying it
             if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOn:
@@ -369,7 +368,6 @@ class EZMomi(object):
             tasks.append(vm.PowerOn())
             result = self.WaitForTasks(tasks)
             print "%s poweredOn" % vm.name
-=======
             print "Finding VM named %s..." % self.config['name']
 
             vm = self.get_obj([vim.VirtualMachine], self.config['name'])
@@ -385,7 +383,6 @@ class EZMomi(object):
             tasks.append(vm.Destroy())
             print "Destroying %s..." % self.config['name']
             result = self.WaitForTasks(tasks)
->>>>>>> master
 
     '''
      Helper methods
