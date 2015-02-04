@@ -23,6 +23,30 @@ ezmomi clone --template centos65 --hostname test01 --cpus 2 --mem 4 --ips 172.10
 
 `ips` takes any number of ips.  See `ezmomi clone --help` for a list of params.
 
+
+##### Power Operations 
+
+Guest shutdown
+
+```
+ezmomi shutdown --name test01
+```
+
+This command alls back to powerOff if VMware guest tools are not installed/available.
+
+Power On/Off
+
+```
+ezmomi powerOn --name test01
+ezmomi powerOff --name test01
+```
+
+##### Power Status
+
+```
+ezmomi status --name test01
+```
+
 ##### Destroy a VM
 
 ```

@@ -31,3 +31,11 @@ def cli():
         ez.clone()
     elif kwargs['mode'] == 'destroy':
         ez.destroy()
+    elif kwargs['mode'] == 'status':
+        ez.status()
+    elif kwargs['mode'] == 'shutdown':
+        ez.shutdown()
+    elif kwargs['mode'] == 'powerOff':
+        ez.powerOff()
+    elif kwargs['mode'] == 'powerOn':
+        ez.powerOn()

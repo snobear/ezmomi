@@ -66,7 +66,7 @@ def add_params(subparsers):
     )
     clone_parser.add_argument(
         '--mem',
-        type=int,
+        type=float,
         help='Memory in GB'
     )
     clone_parser.add_argument(
@@ -89,4 +89,48 @@ def add_params(subparsers):
         '--silent',
         help='Silently destroy a VM (default is false and can be set to true)',
         action='store_true'
+    )
+
+    # status
+    status_parser = subparsers.add_parser(
+        'status',
+        help="Get a Virtual Machine's power status"
+    )
+    status_parser.add_argument(
+        '--name',
+        required=True,
+        help='VM name (case-sensitive)'
+    )
+
+    # shutdown
+    shutdown_parser = subparsers.add_parser(
+        'shutdown',
+        help="Shutdown a Virtual Machine (will fall back to powerOff if guest tools are not running)"
+    )
+    shutdown_parser.add_argument(
+        '--name',
+        required=True,
+        help='VM name (case-sensitive)'
+    )
+
+    # powerOff
+    powerOff_parser = subparsers.add_parser(
+        'powerOff',
+        help="Power Off a Virtual Machine (not a clean shutdown)"
+    )
+    powerOff_parser.add_argument(
+        '--name',
+        required=True,
+        help='VM name (case-sensitive)'
+    )
+
+    # powerOn
+    powerOn_parser = subparsers.add_parser(
+        'powerOn',
+        help="Power On a Virtual Machine"
+    )
+    powerOn_parser.add_argument(
+        '--name',
+        required=True,
+        help='VM name (case-sensitive)'
     )
