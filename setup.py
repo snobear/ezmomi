@@ -5,7 +5,7 @@ except ImportError:
 
 setup(
     name='ezmomi',
-    version='0.3.0',
+    version='0.3.1',
     author='Jason Ashby',
     author_email='jashby2@gmail.com',
     packages=['ezmomi'],

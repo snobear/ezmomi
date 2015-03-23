@@ -368,21 +368,6 @@ class EZMomi(object):
             tasks.append(vm.PowerOn())
             result = self.WaitForTasks(tasks)
             print "%s poweredOn" % vm.name
-            print "Finding VM named %s..." % self.config['name']
-
-            vm = self.get_obj([vim.VirtualMachine], self.config['name'])
-
-            try:
-                # need to shut the VM down before destorying it
-                if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOn:
-                    tasks.append(vm.PowerOff())
-            except AttributeError:
-                print "Error: VM '%s' does not exist" % self.config['name']
-                sys.exit(1)
-
-            tasks.append(vm.Destroy())
-            print "Destroying %s..." % self.config['name']
-            result = self.WaitForTasks(tasks)
 
     '''
      Helper methods
