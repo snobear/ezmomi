@@ -75,6 +75,13 @@ def add_params(subparsers):
         help='Domain, e.g. "example.com"'
     )
 
+    clone_parser.add_argument(
+        '--gateway',
+        type=str,
+        help='Default gateway',
+        default='none'
+    )
+
     # destroy
     destroy_parser = subparsers.add_parser(
         'destroy',
