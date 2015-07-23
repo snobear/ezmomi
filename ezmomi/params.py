@@ -16,6 +16,108 @@ def add_params(subparsers):
         help='Object type, e.g. Network, VirtualMachine.'
     )
 
+    list_snapshot_parser = subparsers.add_parser(
+        'listSnapshots',
+        help='List snapshots for a VM'
+    )
+    list_snapshot_parser.add_argument(
+        '--vm',
+        required=True,
+        help='VM name (case-sensitive)'
+    )
+
+    create_snapshot_parser = subparsers.add_parser(
+        'createSnapshot',
+        help='Create snapshot for a VM'
+    )
+    create_snapshot_parser.add_argument(
+        '--vm',
+        required=True,
+        help='VM name (case-sensitive)'
+    )
+    create_snapshot_parser.add_argument(
+        '--name',
+        required=True,
+        help='Snapshot name (case-sensitive)'
+    )
+    create_snapshot_parser.add_argument(
+        '--memory',
+        required=False,
+        action='store_true',
+        default=False,
+        help=("When set, a dump of the internal state of the virtual "
+              "machine (basically a memory dump) is included in the "
+              "snapshot. When unset, the power state of the snapshot "
+              "is set to powered off.")
+    )
+    create_snapshot_parser.add_argument(
+        '--quiesce',
+        required=False,
+        action='store_true',
+        default=True,
+        help=("When set and the virtual machine is powered on when the "
+              "snapshot is taken, VMware Tools is used to quiesce "
+              "the file system in the virtual machine.")
+    )
+
+    remove_snapshot_parser = subparsers.add_parser(
+        'removeSnapshot',
+        help='Remove snapshot for a VM'
+    )
+    remove_snapshot_parser.add_argument(
+        '--vm',
+        required=True,
+        help='VM name (case-sensitive)'
+    )
+    remove_snapshot_parser.add_argument(
+        '--name',
+        required=True,
+        help='Snapshot name (case-sensitive)'
+    )
+    remove_snapshot_parser.add_argument(
+        '--remove-children',
+        required=False,
+        action='store_true',
+        default=False,
+        help='Flag to specify removal of the entire snapshot subtree'
+    )
+    remove_snapshot_parser.add_argument(
+        '--consolidate',
+        required=False,
+        action='store_true',
+        default=True,
+        help='If true, the virtual disk associated with this snapshot will be merged with other disk if possible'
+    )
+
+    revert_snapshot_parser = subparsers.add_parser(
+        'revertSnapshot',
+        help='Revert snapshot for a VM'
+    )
+    revert_snapshot_parser.add_argument(
+        '--vm',
+        required=True,
+        help='VM name (case-sensitive)'
+    )
+    revert_snapshot_parser.add_argument(
+        '--name',
+        required=True,
+        help='Snapshot name (case-sensitive)'
+    )
+    revert_snapshot_parser.add_argument(
+        '--host',
+        required=False,
+        type=str,
+        help='Choice of host for the virtual machine, in case this operation causes the virtual machine to power on.'
+    )
+    revert_snapshot_parser.add_argument(
+        '--suppress-power-on',
+        required=False,
+        action='store_true',
+        default=False,
+        help=("When set, the virtual machine will not be powered on regardless"
+              "of the power state when the snapshot was created")
+    )
+
     # clone
     clone_parser = subparsers.add_parser(
         'clone',

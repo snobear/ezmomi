@@ -31,6 +31,14 @@ def cli():
         ez.clone()
     elif kwargs['mode'] == 'destroy':
         ez.destroy()
+    elif kwargs['mode'] == 'listSnapshots':
+        ez.listSnapshots()
+    elif kwargs['mode'] == 'createSnapshot':
+        ez.createSnapshot()
+    elif kwargs['mode'] == 'removeSnapshot':
+        ez.removeSnapshot()
+    elif kwargs['mode'] == 'revertSnapshot':
+        ez.revertSnapshot()
     elif kwargs['mode'] == 'status':
         ez.status()
     elif kwargs['mode'] == 'shutdown':
