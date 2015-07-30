@@ -16,8 +16,7 @@ class EZMomi(object):
         # load up our configs and connect to the vSphere server
         self.config = self.get_configs(kwargs)
         self.connect()
-        self._columns_two = "{0:<20} {1:<20}"
-        self._columns_three = "{0:<20} {1:<20} {2:<20}"
+        self._column_spacing = 4
 
     def get_configs(self, kwargs):
         default_cfg_dir = "%s/.config/ezmomi" % os.path.expanduser("~")
@@ -126,16 +125,15 @@ class EZMomi(object):
 
         # print header line
         print "%s list" % vimtype
-        if vimtype == "VirtualMachine":
-            print self._columns_three.format('MOID', 'Name', 'Status')
-        else:
-            print self._columns_two.format('MOID', 'Name')
 
+        rows = [['MOID', 'Name', 'Status']] if vimtype == "VirtualMachine" else [['MOID', 'Name']]
         for c in container.view:
             if vimtype == "VirtualMachine":
-                print self._columns_three.format(c._moId, c.name, c.runtime.powerState)
+                rows.append([c._moId, c.name, c.runtime.powerState])
             else:
-                print self._columns_two.format(c._moId, c.name)
+                rows.append([c._moId, c.name])
+
+        self.tabulate(rows)
 
     def clone(self):
         self.config['hostname'] = self.config['hostname'].lower()
@@ -321,7 +319,7 @@ class EZMomi(object):
     ''' Check power status '''
     def status(self):
         vm = self.get_vm_failfast(self.config['name'])
-        print self._columns_two.format(vm.name, vm.runtime.powerState)
+        self.tabulate([[vm.name, vm.runtime.powerState]])
 
     ''' shutdown guest, with fallback to power off if guest tools aren't installed '''
     def shutdown(self):
@@ -370,18 +368,41 @@ class EZMomi(object):
                     self.get_all_snapshots(vm) if
                     snapshot.name == name)
 
+    def tabulate(self, data):
+        column_widths = []
+
+        for row in data:
+            for column in range(0, len(row)):
+                column_len = len(row[column])
+                try:
+                    column_widths[column] = max(column_len,
+                                                column_widths[column])
+                except IndexError:
+                    column_widths.append(column_len)
+
+        for column in range(0, len(column_widths)):
+            column_widths[column] += self._column_spacing - 1
+
+        format = "{0:<%d}" % column_widths[0]
+        for width in range(1, len(column_widths)):
+            format += " {%d:<%d}" % (width, column_widths[width])
+
+        for row in data:
+            print format.format(*row)
+
     def listSnapshots(self):
         root_snapshot_list = self.get_all_snapshots(self.config['vm'])
 
         if root_snapshot_list:
-            print self._columns_three.format('VM', 'Snapshot', 'Create Time')
+            snapshots = []
+            for snapshot in root_snapshot_list:
+                snapshots.append([str(snapshot.vm), snapshot.name,
+                                  str(snapshot.createTime)])
+
+            data = [['VM', 'Snapshot', 'Create Time']] + snapshots
+            self.tabulate(data)
         else:
             print "No snapshots for %s" % self.config['vm']
-
-        for snapshot in root_snapshot_list or []:
-            print self._columns_three.format(snapshot.vm,
-                                             snapshot.name,
-                                             snapshot.createTime)
 
     def removeSnapshot(self):
         tasks = []
