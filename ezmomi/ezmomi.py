@@ -16,8 +16,7 @@ class EZMomi(object):
         # load up our configs and connect to the vSphere server
         self.config = self.get_configs(kwargs)
         self.connect()
-        self._columns_two = "{0:<20} {1:<20}"
-        self._columns_three = "{0:<20} {1:<20} {2:<20}"
+        self._column_spacing = 4
 
     def get_configs(self, kwargs):
         default_cfg_dir = "%s/.config/ezmomi" % os.path.expanduser("~")
@@ -75,7 +74,7 @@ class EZMomi(object):
         # command line arguments
         notset = list()
         for key, value in kwargs.items():
-            if value:
+            if value is not None:
                 config[key] = value
             elif (value is None) and (key not in config):
                 # compile list of parameters that were not set
@@ -126,16 +125,15 @@ class EZMomi(object):
 
         # print header line
         print "%s list" % vimtype
-        if vimtype == "VirtualMachine":
-            print self._columns_three.format('MOID', 'Name', 'Status')
-        else:
-            print self._columns_two.format('MOID', 'Name')
 
+        rows = [['MOID', 'Name', 'Status']] if vimtype == "VirtualMachine" else [['MOID', 'Name']]
         for c in container.view:
             if vimtype == "VirtualMachine":
-                print self._columns_three.format(c._moId, c.name, c.runtime.powerState)
+                rows.append([c._moId, c.name, c.runtime.powerState])
             else:
-                print self._columns_two.format(c._moId, c.name)
+                rows.append([c._moId, c.name])
+
+        self.tabulate(rows)
 
     def clone(self):
         self.config['hostname'] = self.config['hostname'].lower()
@@ -321,7 +319,7 @@ class EZMomi(object):
     ''' Check power status '''
     def status(self):
         vm = self.get_vm_failfast(self.config['name'])
-        print self._columns_two.format(vm.name, vm.runtime.powerState)
+        self.tabulate([[vm.name, vm.runtime.powerState]])
 
     ''' shutdown guest, with fallback to power off if guest tools aren't installed '''
     def shutdown(self):
@@ -344,6 +342,90 @@ class EZMomi(object):
             else:
                 print "GuestTools not running or not installed: will powerOff"
                 self.powerOff()
+
+    def createSnapshot(self):
+        tasks = []
+
+        vm = self.get_vm_failfast(self.config['vm'])
+        tasks.append(vm.CreateSnapshot(self.config['name'],
+                                       memory=self.config['memory'],
+                                       quiesce=self.config['quiesce']))
+        result = self.WaitForTasks(tasks)
+        print "Created snapshot for %s" % vm.name
+
+    def get_all_snapshots(self, vm_name):
+        vm = self.get_vm_failfast(vm_name)
+
+        try:
+            vm_snapshot_info = vm.snapshot
+        except IndexError:
+            return
+
+        return vm_snapshot_info.rootSnapshotList
+
+    def get_snapshot_by_name(self, vm, name):
+        return next(snapshot.snapshot for snapshot in
+                    self.get_all_snapshots(vm) if
+                    snapshot.name == name)
+
+    def tabulate(self, data):
+        column_widths = []
+
+        for row in data:
+            for column in range(0, len(row)):
+                column_len = len(row[column])
+                try:
+                    column_widths[column] = max(column_len,
+                                                column_widths[column])
+                except IndexError:
+                    column_widths.append(column_len)
+
+        for column in range(0, len(column_widths)):
+            column_widths[column] += self._column_spacing - 1
+
+        format = "{0:<%d}" % column_widths[0]
+        for width in range(1, len(column_widths)):
+            format += " {%d:<%d}" % (width, column_widths[width])
+
+        for row in data:
+            print format.format(*row)
+
+    def listSnapshots(self):
+        root_snapshot_list = self.get_all_snapshots(self.config['vm'])
+
+        if root_snapshot_list:
+            snapshots = []
+            for snapshot in root_snapshot_list:
+                snapshots.append([str(snapshot.vm), snapshot.name,
+                                  str(snapshot.createTime)])
+
+            data = [['VM', 'Snapshot', 'Create Time']] + snapshots
+            self.tabulate(data)
+        else:
+            print "No snapshots for %s" % self.config['vm']
+
+    def removeSnapshot(self):
+        tasks = []
+
+        snapshot = self.get_snapshot_by_name(self.config['vm'],
+                                             self.config['name'])
+        tasks.append(snapshot.Remove(self.config['remove_children'],
+                                     self.config['consolidate']))
+        result = self.WaitForTasks(tasks)
+        print("Removed snapshot %s for virtual machine %s" %
+              (self.config['name'], self.config['vm']))
+
+    def revertSnapshot(self):
+        tasks = []
+
+        snapshot = self.get_snapshot_by_name(self.config['vm'],
+                                             self.config['name'])
+        host_system = self.get_host_system_failfast(self.config['host'])
+        tasks.append(snapshot.Revert(host=host_system,
+                                     suppressPowerOn=self.config['suppress_power_on']))
+        result = self.WaitForTasks(tasks)
+        print("Reverted snapshot %s for virtual machine %s" %
+              (self.config['name'], self.config['vm']))
 
     def powerOff(self):
         vm = self.get_vm_failfast(self.config['name'])
@@ -413,6 +495,30 @@ class EZMomi(object):
                 obj = c
                 break
         return obj
+
+    '''
+    Get a HostSystem object
+    '''
+    def get_host_system(self, name):
+        return self.get_obj([vim.HostSystem], name)
+
+    '''
+    Get a HostSystem object and fail fast if the object isn't a valid reference
+    '''
+    def get_host_system_failfast(self, name, verbose=False, host_system_term='HS'):
+        if True == verbose:
+            print "Finding HostSystem named %s..." % name
+
+        hs = self.get_host_system(name)
+
+        if None == hs:
+            print "Error: %s '%s' does not exist" % (host_system_term, name)
+            sys.exit(1)
+
+        if True == verbose:
+            print("Found HostSystem: {0} Name: {1}", hs, hs.name)
+
+        return hs
 
     '''
      Get a VirtualMachine object
