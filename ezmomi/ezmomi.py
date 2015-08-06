@@ -142,7 +142,7 @@ class EZMomi(object):
         self.config['mem'] = int(self.config['mem'] * 1024)  # convert GB to MB
 
         print "Cloning %s to new host %s with %sMB RAM..." % (
-            self.config['template'],
+            self.config['template_name'],
             self.config['hostname'],
             self.config['mem']
         )
@@ -187,7 +187,7 @@ class EZMomi(object):
         # use same root resource pool that my desired cluster uses
         resource_pool = cluster.resourcePool
         datastore = self.get_obj([vim.Datastore], ip_settings[0]['datastore'])
-        template_vm = self.get_vm_failfast(self.config['template'], False, 'Template VM')
+        template_vm = self.get_vm_failfast(self.config['template_name'], False, 'Template VM')
 
         # Relocation spec
         relospec = vim.vm.RelocateSpec()
@@ -286,7 +286,7 @@ class EZMomi(object):
         clonespec.config = vmconf
         clonespec.customization = customspec
         clonespec.powerOn = True
-        clonespec.template = False
+        clonespec.template = self.config['to_template']
 
         # fire the clone task
         tasks = [template_vm.Clone(folder=destfolder,

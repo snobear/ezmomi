@@ -42,7 +42,14 @@ def add_params(subparsers):
         help='vCenter password',
     )
     clone_parser.add_argument(
-        '--template',
+        '--to-template',
+        default=False,
+        action='store_true',
+        help=('Specifies whether or not the new virtual machine '
+              'should be marked as a template')
+    )
+    clone_parser.add_argument(
+        '--template-name',
         type=str,
         help='VM template name to clone from'
     )
