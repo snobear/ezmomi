@@ -13,12 +13,23 @@ import yaml
 
 class EZMomi(object):
     def __init__(self, **kwargs):
-        # load up our configs and connect to the vSphere server
-        self.config = self.get_configs(kwargs)
-        self.connect()
-        self._column_spacing = 4
+        """
+        Load the configuration and connect to the vSphere server
+        """
 
-    def get_configs(self, kwargs):
+        self.config = self.get_config(kwargs)
+        self.connect()
+        self._minimum_column_spacing = 4
+
+    def get_config(self, kwargs):
+        """
+        Get the YAML file and CLI specified configuration. CLI
+        arguments override any existing definitions.
+
+        :param kwargs: A dictionary of keyword arguments from the YAML file and CLI
+        :return config: Dictionary of parsed config values
+        """
+
         default_cfg_dir = "%s/.config/ezmomi" % os.path.expanduser("~")
         default_config_file = "%s/config.yml" % default_cfg_dir
 
@@ -86,11 +97,11 @@ class EZMomi(object):
 
         return config
 
-    '''
-     Connect to vCenter server
-    '''
     def connect(self):
-        # connect to vCenter server
+        """
+        Connect to a vCenter server
+        """
+
         try:
             self.si = SmartConnect(host=self.config['server'],
                                    user=self.config['username'],
@@ -107,12 +118,14 @@ class EZMomi(object):
 
         self.content = self.si.RetrieveContent()
 
-    '''
-     Command Section: list
-     List available VMware objects
-    '''
-    def list_objects(self):
-        vimtype = self.config['type']
+    def list_objects(self, vimtype):
+        """
+        List available vSphere objects
+
+        :param vimtype: Type of vSphere vim object
+        :return: List of list of vSphere vim objects
+        """
+
         vim_obj = "vim.%s" % vimtype
 
         try:
@@ -123,19 +136,21 @@ class EZMomi(object):
                   "docs for possible options." % vimtype
             sys.exit(1)
 
-        # print header line
-        print "%s list" % vimtype
-
-        rows = [['MOID', 'Name', 'Status']] if vimtype == "VirtualMachine" else [['MOID', 'Name']]
+        rows = []
         for c in container.view:
             if vimtype == "VirtualMachine":
                 rows.append([c._moId, c.name, c.runtime.powerState])
             else:
                 rows.append([c._moId, c.name])
 
-        self.tabulate(rows)
+        return rows
 
     def clone(self):
+        """
+        Clone a virtual machine template to a new virtual machine or
+        template
+        """
+
         self.config['hostname'] = self.config['hostname'].lower()
         self.config['mem'] = int(self.config['mem'] * 1024)  # convert GB to MB
 
@@ -298,6 +313,10 @@ class EZMomi(object):
             self.send_email()
 
     def destroy(self):
+        """
+        Destroy a virtual machine
+        """
+
         tasks = list()
 
         destroyed = 'no'
@@ -316,13 +335,19 @@ class EZMomi(object):
             print "Destroying %s..." % self.config['name']
             result = self.WaitForTasks(tasks)
 
-    ''' Check power status '''
     def status(self):
+        """
+        Print the power status of a virtual machine
+        """
+
         vm = self.get_vm_failfast(self.config['name'])
         self.tabulate([[vm.name, vm.runtime.powerState]])
 
-    ''' shutdown guest, with fallback to power off if guest tools aren't installed '''
     def shutdown(self):
+        """
+        Shutdown a virtual machine with fallback to power off if guest tools aren't installed
+        """
+
         vm = self.get_vm_failfast(self.config['name'])
 
         if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOff:
@@ -344,6 +369,10 @@ class EZMomi(object):
                 self.powerOff()
 
     def createSnapshot(self):
+        """
+        Create a snapshot for a virtual machine
+        """
+
         tasks = []
 
         vm = self.get_vm_failfast(self.config['vm'])
@@ -354,6 +383,13 @@ class EZMomi(object):
         print "Created snapshot for %s" % vm.name
 
     def get_all_snapshots(self, vm_name):
+        """
+        Get all snapshots for a virtual machine
+
+        :param vm_name: The name of the virtual machine
+        :returns: List of virtual machine snapshots
+        """
+
         vm = self.get_vm_failfast(vm_name)
 
         try:
@@ -364,11 +400,24 @@ class EZMomi(object):
         return vm_snapshot_info.rootSnapshotList
 
     def get_snapshot_by_name(self, vm, name):
+        """
+        Get a virtual machine snapshot by name
+
+        :param vm: VirtualMachine object containing the named snapshot
+        :param name: Name of the snapshot
+        """
+
         return next(snapshot.snapshot for snapshot in
                     self.get_all_snapshots(vm) if
                     snapshot.name == name)
 
     def tabulate(self, data):
+        """
+        Prints tabulated input data specified by a list of lists
+
+        :param data: A list of lists to tabulate
+        """
+
         column_widths = []
 
         for row in data:
@@ -381,7 +430,7 @@ class EZMomi(object):
                     column_widths.append(column_len)
 
         for column in range(0, len(column_widths)):
-            column_widths[column] += self._column_spacing - 1
+            column_widths[column] += self._minimum_column_spacing - 1
 
         format = "{0:<%d}" % column_widths[0]
         for width in range(1, len(column_widths)):
@@ -391,6 +440,10 @@ class EZMomi(object):
             print format.format(*row)
 
     def listSnapshots(self):
+        """
+        List all snapshots for a virtual machine
+        """
+
         root_snapshot_list = self.get_all_snapshots(self.config['vm'])
 
         if root_snapshot_list:
@@ -405,6 +458,10 @@ class EZMomi(object):
             print "No snapshots for %s" % self.config['vm']
 
     def removeSnapshot(self):
+        """
+        Remove snapshot for a virtual machine
+        """
+
         tasks = []
 
         snapshot = self.get_snapshot_by_name(self.config['vm'],
@@ -416,6 +473,10 @@ class EZMomi(object):
               (self.config['name'], self.config['vm']))
 
     def revertSnapshot(self):
+        """
+        Revert a virtual machine to the specified snapshot
+        """
+
         tasks = []
 
         snapshot = self.get_snapshot_by_name(self.config['vm'],
@@ -428,6 +489,10 @@ class EZMomi(object):
               (self.config['name'], self.config['vm']))
 
     def powerOff(self):
+        """
+        Power off a virtual machine
+        """
+
         vm = self.get_vm_failfast(self.config['name'])
 
         if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOff:
@@ -440,6 +505,10 @@ class EZMomi(object):
             print "%s poweredOff" % vm.name
 
     def powerOn(self):
+        """
+        Power on a virtual machine
+        """
+
         vm = self.get_vm_failfast(self.config['name'])
 
         if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOn:
@@ -451,10 +520,11 @@ class EZMomi(object):
             result = self.WaitForTasks(tasks)
             print "%s poweredOn" % vm.name
 
-    '''
-     Helper methods
-    '''
     def send_email(self):
+        """
+        Send an email
+        """
+
         import smtplib
         from email.mime.text import MIMEText
 
@@ -483,10 +553,16 @@ class EZMomi(object):
         s.sendmail(mailfrom, [mailto], msg.as_string())
         s.quit()
 
-    '''
-     Get the vsphere object associated with a given text name
-    '''
     def get_obj(self, vimtype, name):
+        """
+        Get the vSphere object associated with a given name
+
+        :param vimtype: Vim type object
+        :param name: Name of the Vim type object
+        :returns: vSphere object
+
+        """
+
         obj = None
         container = self.content.viewManager.CreateContainerView(
             self.content.rootFolder, vimtype, True)
@@ -496,16 +572,21 @@ class EZMomi(object):
                 break
         return obj
 
-    '''
-    Get a HostSystem object
-    '''
     def get_host_system(self, name):
+        """
+        Get a HostSystem object
+
+        :param name: Name of the HostSystem
+        :returns: HostSystem object
+        """
+
         return self.get_obj([vim.HostSystem], name)
 
-    '''
-    Get a HostSystem object and fail fast if the object isn't a valid reference
-    '''
     def get_host_system_failfast(self, name, verbose=False, host_system_term='HS'):
+        """
+        Get a HostSystem object and fail fast if the object isn't a valid reference
+        """
+
         if True == verbose:
             print "Finding HostSystem named %s..." % name
 
@@ -520,16 +601,25 @@ class EZMomi(object):
 
         return hs
 
-    '''
-     Get a VirtualMachine object
-    '''
     def get_vm(self, name):
+        """
+        Get a VirtualMachine object
+
+        :param name: Name of the virtual machine
+        """
+
         return self.get_obj([vim.VirtualMachine], name)
 
-    '''
-     Get a VirtualMachine object and fail fast if the object isn't a valid reference
-    '''
     def get_vm_failfast(self, name, verbose=False, vm_term='VM'):
+        """
+        Get a VirtualMachine object and fail fast if the object
+        isn't a valid reference
+
+        :param name: Name of the virtual machine
+        :param verbose: 
+        :param vm_term:
+        """
+
         if True == verbose:
             print "Finding VirtualMachine named %s..." % name
 
@@ -545,14 +635,23 @@ class EZMomi(object):
         return vm
 
     def guestToolsRunning(self, vm):
-        # simple helper to avoid potential typos on the string comparison
+        """
+        Test if guest tools are running for a VM. Helper to avoid
+        potential typos on the string comparison
+
+        :param vm: VirtualMachine object
+        :return True: If guest tools are running
+        :return False: If guest tools are not running
+        """
+
         return 'guestToolsRunning' == vm.guest.toolsRunningStatus
 
     def WaitForTasks(self, tasks):
-        '''
-        Given the service instance si and tasks, it returns after all the
-        tasks are complete
-        '''
+        """
+        Wait for all tasks to finish before continuing
+
+        :param tasks: List of tasks to wait for
+        """
 
         pc = self.si.content.propertyCollector
 
@@ -600,20 +699,25 @@ class EZMomi(object):
             if filter:
                 filter.Destroy()
 
-    def WaitForVirtualMachineShutdown(self, vm_to_poll, timeout_seconds, sleep_period=5):
-        '''
+    def WaitForVirtualMachineShutdown(self, vm, timeout, sleep_period=5):
+        """
         Guest shutdown requests do not run a task we can wait for.
         So, we must poll and wait for status to be poweredOff.
 
-        Returns True if shutdown, False if poll expired.
-        '''
+        :param vm: Name of the virtual machine
+        :param timeout: Timeout in seconds before stopping wait
+        :param sleep_period: Time to sleep before checking if shutdown
+        :return True: If shutdown
+        :return False: If timeout expired and (probably) not shutdown
+        """
+
         seconds_waited = 0 # wait counter
-        while seconds_waited < timeout_seconds:
+        while seconds_waited < timeout:
             # sleep first, since nothing shuts down instantly
             seconds_waited += sleep_period
             time.sleep(sleep_period)
 
-            vm = self.get_vm(vm_to_poll.name)
+            vm = self.get_vm(vm.name)
             if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOff:
                 return True
 

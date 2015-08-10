@@ -1,9 +1,13 @@
-'''
+"""
 Command line option definitions
-'''
+"""
 
 
 def add_params(subparsers):
+    """
+    Add parameters to the argument parser
+    """
+
     # list
     list_parser = subparsers.add_parser(
         'list',

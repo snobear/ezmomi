@@ -13,20 +13,25 @@ def cli():
     )
     subparsers = parser.add_subparsers(help='Command', dest='mode')
 
-    # set up each command section
+    # Set up each command section
     add_params(subparsers)
 
-    # parse arguments
+    # Parse arguments
     args = parser.parse_args()
 
-    # initialize ezmomi instance
+    # Initialize ezmomi instance
     ez = EZMomi(**vars(args))
 
     kwargs = vars(args)
 
-    # choose your adventure
     if kwargs['mode'] == 'list':
-        ez.list_objects()
+        vimtype = ez.config['type']
+        print "%s list" % vimtype
+        rows = [['MOID', 'Name', 'Status']] if vimtype == "VirtualMachine" else [['MOID', 'Name']]
+
+        rows += ez.list_objects(vimtype)
+
+        ez.tabulate(rows)
     elif kwargs['mode'] == 'clone':
         ez.clone()
     elif kwargs['mode'] == 'destroy':
