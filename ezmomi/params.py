@@ -3,9 +3,41 @@ Command line option definitions
 """
 
 
-def add_params(subparsers):
+def add_params(parser):
     """
-    Add parameters to the argument parser
+    Add parameters to the main argument parser
+    """
+
+    parser.add_argument(
+        '--mailfrom',
+        type=str,
+        required=False,
+        help='Address to send mail from'
+    )
+    parser.add_argument(
+        '--mailserver',
+        type=str,
+        required=False,
+        help='Outgoing SMTP server used to send mail'
+    )
+    parser.add_argument(
+        '--mailto',
+        type=str,
+        required=False,
+        help='Address to send mail to'
+    )
+
+    parser.add_argument('-v', '--verbose', help="Show messages at the"
+                        " specified log level according to the number of"
+                        " v\'s: INFO, DEBUG. DEBUG shows most function"
+                        " entry and exit", action='count', default=0)
+
+
+def add_subparser_params(subparsers):
+    """
+    Add subparsers and their parameters to the main argument parser
+
+    :param subparsers: Subparser to add parsers to
     """
 
     # list
@@ -21,7 +53,7 @@ def add_params(subparsers):
     )
 
     list_snapshot_parser = subparsers.add_parser(
-        'listSnapshots',
+        'list-snapshots',
         help='List snapshots for a VM'
     )
     list_snapshot_parser.add_argument(
@@ -31,7 +63,7 @@ def add_params(subparsers):
     )
 
     create_snapshot_parser = subparsers.add_parser(
-        'createSnapshot',
+        'create-snapshot',
         help='Create snapshot for a VM'
     )
     create_snapshot_parser.add_argument(
@@ -65,7 +97,7 @@ def add_params(subparsers):
     )
 
     remove_snapshot_parser = subparsers.add_parser(
-        'removeSnapshot',
+        'remove-snapshot',
         help='Remove snapshot for a VM'
     )
     remove_snapshot_parser.add_argument(
@@ -90,11 +122,12 @@ def add_params(subparsers):
         required=False,
         action='store_true',
         default=True,
-        help='If true, the virtual disk associated with this snapshot will be merged with other disk if possible'
+        help=("If true, the virtual disk associated with this snapshot will be"
+              " merged with other disk if possible")
     )
 
     revert_snapshot_parser = subparsers.add_parser(
-        'revertSnapshot',
+        'revert-snapshot',
         help='Revert snapshot for a VM'
     )
     revert_snapshot_parser.add_argument(
@@ -111,7 +144,8 @@ def add_params(subparsers):
         '--host',
         required=False,
         type=str,
-        help='Choice of host for the virtual machine, in case this operation causes the virtual machine to power on.'
+        help=("Choice of host for the virtual machine, in case this operation"
+              " causes the virtual machine to power on.")
     )
     revert_snapshot_parser.add_argument(
         '--suppress-power-on',
@@ -179,7 +213,7 @@ def add_params(subparsers):
     )
     clone_parser.add_argument(
         '--mem',
-        type=float,
+        type=lambda x: int(x) * 1024,
         help='Memory in GB'
     )
     clone_parser.add_argument(
@@ -194,14 +228,9 @@ def add_params(subparsers):
         help='Destroy/delete a Virtual Machine'
     )
     destroy_parser.add_argument(
-        '--name',
+        '--vm',
         required=True,
         help='VM name (case-sensitive)'
-    )
-    destroy_parser.add_argument(
-        '--silent',
-        help='Silently destroy a VM (default is false and can be set to true)',
-        action='store_true'
     )
 
     # status
@@ -210,7 +239,7 @@ def add_params(subparsers):
         help="Get a Virtual Machine's power status"
     )
     status_parser.add_argument(
-        '--name',
+        '--vm',
         required=True,
         help='VM name (case-sensitive)'
     )
@@ -218,32 +247,33 @@ def add_params(subparsers):
     # shutdown
     shutdown_parser = subparsers.add_parser(
         'shutdown',
-        help="Shutdown a Virtual Machine (will fall back to powerOff if guest tools are not running)"
+        help=("Shutdown a Virtual Machine (will fall back to powerOff if guest"
+              " tools are not running)")
     )
     shutdown_parser.add_argument(
-        '--name',
+        '--vm',
         required=True,
         help='VM name (case-sensitive)'
     )
 
-    # powerOff
-    powerOff_parser = subparsers.add_parser(
-        'powerOff',
+    # power-off
+    power_off_parser = subparsers.add_parser(
+        'power-off',
         help="Power Off a Virtual Machine (not a clean shutdown)"
     )
-    powerOff_parser.add_argument(
-        '--name',
+    power_off_parser.add_argument(
+        '--vm',
         required=True,
         help='VM name (case-sensitive)'
     )
 
-    # powerOn
-    powerOn_parser = subparsers.add_parser(
-        'powerOn',
+    # power-on
+    power_on_parser = subparsers.add_parser(
+        'power-on',
         help="Power On a Virtual Machine"
     )
-    powerOn_parser.add_argument(
-        '--name',
+    power_on_parser.add_argument(
+        '--vm',
         required=True,
         help='VM name (case-sensitive)'
     )
