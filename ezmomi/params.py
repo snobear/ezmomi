@@ -1,8 +1,6 @@
 '''
 Command line option definitions
 '''
-
-
 def add_params(subparsers):
     # list
     list_parser = subparsers.add_parser(
@@ -175,6 +173,12 @@ def add_params(subparsers):
         '--domain',
         type=str,
         help='Domain, e.g. "example.com"'
+    )
+    clone_parser.add_argument(
+        '--resource-pool',
+        type=str,
+        default='Resources',
+        help='Resource Pool, e.g. "Linux Servers"'
     )
 
     # destroy

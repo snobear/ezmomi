@@ -5,7 +5,6 @@ import argparse
 from params import add_params
 from ezmomi import EZMomi
 
-
 def cli():
     # Set up command line arguments
     parser = argparse.ArgumentParser(
@@ -13,6 +12,8 @@ def cli():
     )
     subparsers = parser.add_subparsers(help='Command', dest='mode')
 
+    from pprint import pprint
+  
     # set up each command section
     add_params(subparsers)
 
