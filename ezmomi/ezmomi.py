@@ -576,7 +576,7 @@ class EZMomi(object):
             sys.exit(1)
 
         if True == verbose:
-            print("Found HostSystem: {0} Name: {1}", hs, hs.name)
+            print "Found HostSystem: {0} Name: {1}" % (hs, hs.name)
 
         return hs
 
@@ -600,7 +600,7 @@ class EZMomi(object):
             sys.exit(1)
 
         if True == verbose:
-            print("Found VirtualMachine: {0} Name: {1}", vm, vm.name)
+            print "Found VirtualMachine: %s Name: %s" % (vm, vm.name)
 
         return vm
 
@@ -642,8 +642,9 @@ class EZMomi(object):
                             if change.name == 'info':
                                 state = change.val.state
                             elif change.name == 'info.state':
-                                if not str(task) in taskList:
-                                    continue
+                                state = change.val
+                            else:
+                                continue
 
                             if state == vim.TaskInfo.State.success:
                                 # Remove task from taskList

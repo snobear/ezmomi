@@ -12,8 +12,6 @@ def cli():
     )
     subparsers = parser.add_subparsers(help='Command', dest='mode')
 
-    from pprint import pprint
-  
     # set up each command section
     add_params(subparsers)
 
