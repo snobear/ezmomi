@@ -514,10 +514,11 @@ class EZMomi(object):
         pool_selections = self.get_obj([vim.ResourcePool], pool_name, return_all=True)
 
         # get the first pool that exists in a given cluster
-        for p in pool_selections:
-            if p in cluster_pools_list:
-                pool_obj = p
-                break
+        if pool_selections:
+            for p in pool_selections:
+                if p in cluster_pools_list:
+                    pool_obj = p
+                    break
 
         return pool_obj
 
