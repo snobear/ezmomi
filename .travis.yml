@@ -6,3 +6,6 @@ env: PYTHONPATH=$PWD:$PYTHONPATH PATH=$PWD/bin:$PATH
 # command to install dependencies
 install: "pip install -r requirements.txt"
 script: "ezmomi --help"
+script: "python -m py_compile ezmomi/cli.py"
+script: "python -m py_compile ezmomi/params.py"
+script: "python -m py_compile ezmomi/ezmomi.py"

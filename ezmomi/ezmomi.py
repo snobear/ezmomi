@@ -182,9 +182,27 @@ class EZMomi(object):
         cluster = self.get_obj([vim.ClusterComputeResource],
                                ip_settings[0]['cluster']
                                )
-        # use same root resource pool that my desired cluster uses
-        resource_pool = cluster.resourcePool
+
+        resource_pool_str = self.config['resource_pool']
+
+        # resource_pool setting in config file takes priority over the
+        # default 'Resources' pool
+        if resource_pool_str == 'Resources' and ('resource_pool' in ip_settings[key]):
+            resource_pool_str = ip_settings[key]['resource_pool'] 
+
+
+        resource_pool = self.get_resource_pool(cluster, resource_pool_str) 
+
+        if resource_pool is None:
+            print "Error: Unable to find Resource Pool '%s'" % resource_pool_str
+            sys.exit(1)
+
         datastore = self.get_obj([vim.Datastore], ip_settings[0]['datastore'])
+
+        if datastore is None:
+            print "Error: Unable to find Datastore '%s'" % ip_settings[0]['datastore']
+            sys.exit(1)
+            
         template_vm = self.get_vm_failfast(self.config['template'], False, 'Template VM')
 
         # Relocation spec
@@ -201,7 +219,7 @@ class EZMomi(object):
         # don't clone nic devices from template
         for device in template_vm.config.hardware.device:
             if hasattr(device, 'addressType'):
-                # this is a VirtualEthernetCard, so we'll delete it,
+                # this is a VirtualEthernetCard, so we'll delete it
                 nic = vim.vm.device.VirtualDeviceSpec()
                 nic.operation = vim.vm.device.VirtualDeviceSpec.Operation.remove
                 nic.device = device
@@ -241,7 +259,7 @@ class EZMomi(object):
             guest_map.adapter.ip.ipAddress = str(ip_settings[key]['ip'])
             guest_map.adapter.subnetMask = str(ip_settings[key]['subnet_mask'])
 
-            # these may not be set for certain IPs, e.g. storage IPs
+            # these may not be set for certain IPs
             try:
                 guest_map.adapter.gateway = ip_settings[key]['gateway']
             except:
@@ -484,14 +502,56 @@ class EZMomi(object):
         s.quit()
 
     '''
-     Get the vsphere object associated with a given text name
+    Find a resource pool given a pool name for desired cluster
     '''
-    def get_obj(self, vimtype, name):
+    def get_resource_pool(self, cluster, pool_name):
+        pool_obj = None
+
+        # get a list of all resource pools in this cluster
+        cluster_pools_list = cluster.resourcePool.resourcePool
+
+        # get list of all resource pools with a given text name
+        pool_selections = self.get_obj([vim.ResourcePool], pool_name, return_all=True)
+
+        # get the first pool that exists in a given cluster
+        for p in pool_selections:
+            if p in cluster_pools_list:
+                pool_obj = p
+                break
+
+        return pool_obj
+
+    '''
+    Get the vsphere object associated with a given text name
+    '''
+    def get_obj(self, vimtype, name, return_all=False):
+        obj = list() 
+        container = self.content.viewManager.CreateContainerView(
+            self.content.rootFolder, vimtype, True)
+
+        for c in container.view:
+            if c.name == name:
+                if return_all is False:
+                    return c
+                    break
+                else:
+                    obj.append(c) 
+                     
+        if len(obj) > 0:
+            return obj
+        else: 
+            # for backwards-compat
+            return None
+
+    '''
+    Get the vsphere object associated with a given MoId
+    '''
+    def get_obj_by_moid(self, vimtype, moid):
         obj = None
         container = self.content.viewManager.CreateContainerView(
             self.content.rootFolder, vimtype, True)
         for c in container.view:
-            if c.name == name:
+            if c._GetMoId() == moid:
                 obj = c
                 break
         return obj
@@ -516,7 +576,7 @@ class EZMomi(object):
             sys.exit(1)
 
         if True == verbose:
-            print("Found HostSystem: {0} Name: {1}", hs, hs.name)
+            print "Found HostSystem: {0} Name: {1}" % (hs, hs.name)
 
         return hs
 
@@ -540,7 +600,7 @@ class EZMomi(object):
             sys.exit(1)
 
         if True == verbose:
-            print("Found VirtualMachine: {0} Name: {1}", vm, vm.name)
+            print "Found VirtualMachine: %s Name: %s" % (vm, vm.name)
 
         return vm
 
@@ -584,9 +644,6 @@ class EZMomi(object):
                             elif change.name == 'info.state':
                                 state = change.val
                             else:
-                                continue
-
-                            if not str(task) in taskList:
                                 continue
 
                             if state == vim.TaskInfo.State.success:
