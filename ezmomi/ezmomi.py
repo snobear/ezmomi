@@ -87,7 +87,7 @@ class EZMomi(object):
         return config
 
     '''
-     Connect to vCenter server
+    Connect to vCenter server
     '''
     def connect(self):
         # connect to vCenter server
@@ -108,8 +108,8 @@ class EZMomi(object):
         self.content = self.si.RetrieveContent()
 
     '''
-     Command Section: list
-     List available VMware objects
+    Command Section: list
+    List available VMware objects
     '''
     def list_objects(self):
         vimtype = self.config['type']
@@ -188,21 +188,20 @@ class EZMomi(object):
         # resource_pool setting in config file takes priority over the
         # default 'Resources' pool
         if resource_pool_str == 'Resources' and ('resource_pool' in ip_settings[key]):
-            resource_pool_str = ip_settings[key]['resource_pool'] 
+            resource_pool_str = ip_settings[key]['resource_pool']
 
-
-        resource_pool = self.get_resource_pool(cluster, resource_pool_str) 
+        resource_pool = self.get_resource_pool(cluster, resource_pool_str)
 
         if resource_pool is None:
-            print "Error: Unable to find Resource Pool '%s'" % resource_pool_str
-            sys.exit(1)
+            # use default resource pool of target cluster
+            resource_pool = cluster.resourcePool
 
         datastore = self.get_obj([vim.Datastore], ip_settings[0]['datastore'])
 
         if datastore is None:
             print "Error: Unable to find Datastore '%s'" % ip_settings[0]['datastore']
             sys.exit(1)
-            
+
         template_vm = self.get_vm_failfast(self.config['template'], False, 'Template VM')
 
         # Relocation spec
@@ -526,7 +525,7 @@ class EZMomi(object):
     Get the vsphere object associated with a given text name
     '''
     def get_obj(self, vimtype, name, return_all=False):
-        obj = list() 
+        obj = list()
         container = self.content.viewManager.CreateContainerView(
             self.content.rootFolder, vimtype, True)
 
@@ -536,11 +535,11 @@ class EZMomi(object):
                     return c
                     break
                 else:
-                    obj.append(c) 
-                     
+                    obj.append(c)
+
         if len(obj) > 0:
             return obj
-        else: 
+        else:
             # for backwards-compat
             return None
 
