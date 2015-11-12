@@ -135,6 +135,153 @@ class EZMomi(object):
 
         self.tabulate(rows)
 
+    def create(self):
+        self.config['hostname'] = self.config['hostname'].lower()
+        self.config['mem'] = int(self.config['mem'] * 1024)  # convert GB to MB
+
+        # initialize a list to hold our network settings
+        ip_settings = list()
+
+        # Get network settings for each IP
+        for key, ip_string in enumerate(self.config['ips']):
+
+            # convert ip from string to the 'IPAddress' type
+            ip = IPAddress(ip_string)
+
+            # determine network this IP is in
+            for network in self.config['networks']:
+                if ip in IPNetwork(network):
+                    self.config['networks'][network]['ip'] = ip
+                    ipnet = IPNetwork(network)
+                    self.config['networks'][network]['subnet_mask'] = str(
+                        ipnet.netmask
+                        )
+                    ip_settings.append(self.config['networks'][network])
+
+            # throw an error if we couldn't find a network for this ip
+            if not any(d['ip'] == ip for d in ip_settings):
+                print "I don't know what network %s is in.  You can supply " \
+                      "settings for this network in config.yml." % ip_string
+                sys.exit(1)
+
+        # Use the first IP to find the network, datacenter, and cluster.
+        self.get_obj([vim.Network], ip_settings[0]['network'])
+        datacenter = self.get_obj([vim.Datacenter],
+                                  ip_settings[0]['datacenter']
+                                  )
+        cluster = self.get_obj([vim.ClusterComputeResource],
+                               ip_settings[0]['cluster']
+                               )
+
+        # If we were given a folder name, find it.  Otherwise use root folder.
+        destfolder = datacenter.vmFolder
+        if self.config['folder']:
+            destfolder = self.get_folder(destfolder, self.config['folder'])
+        if destfolder is None:
+            print "Error: Unable to find Folder '%s'" % self.config['folder']
+
+        # resource_pool setting in config file takes priority over the
+        # default 'Resources' pool
+        resource_pool_str = self.config['resource_pool']
+        if resource_pool_str == 'Resources' and ('resource_pool' in ip_settings[key]):
+            resource_pool_str = ip_settings[key]['resource_pool'] 
+
+        resource_pool_str = 'Infrastructure'
+        resource_pool = self.get_resource_pool(cluster, resource_pool_str) 
+
+        if resource_pool is None:
+            print "Error: Unable to find Resource Pool '%s'" % resource_pool_str
+            sys.exit(1)
+
+        datastore_str = ip_settings[0]['datastore']
+        datastore = self.get_obj([vim.Datastore], datastore_str)
+
+        if datastore is None:
+            print "Error: Unable to find Datastore '%s'" % ip_settings[0]['datastore']
+            sys.exit(1)
+        
+        # Default file information, just set the pathname and let everything else
+        # default.
+        datastore_path = '[' + datastore_str + '] ' + self.config['hostname']
+        vmx_file = vim.vm.FileInfo(logDirectory=None,
+                                   snapshotDirectory=None,
+                                   suspendDirectory=None,
+                                   vmPathName=datastore_path)
+
+        '''
+         Networking self.config for VM and guest OS
+        '''
+        devices = []
+        adaptermaps = []
+
+        # create a Network device for each static IP
+        for key, ip in enumerate(ip_settings):
+
+            # Create the device with default settings.
+            nic = vim.vm.device.VirtualDeviceSpec()
+            nic.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
+            nic.device = vim.vm.device.VirtualVmxnet3()
+            nic.device.wakeOnLanEnabled = True
+            nic.device.addressType = 'assigned'
+
+            # 4000 seems to be the value to use for a vmxnet3 device
+            nic.device.key = 4000
+            nic.device.deviceInfo = vim.Description()
+            nic.device.deviceInfo.label = 'Network Adapter %s' % (key + 1)
+            nic.device.deviceInfo.summary = ip_settings[key]['network']
+            nic.device.backing = (
+                vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
+            )
+            nic.device.backing.network = (
+                self.get_obj([vim.Network], ip_settings[key]['network'])
+            )
+            nic.device.backing.deviceName = ip_settings[key]['network']
+            nic.device.backing.useAutoDetect = False
+            nic.device.connectable = vim.vm.device.VirtualDevice.ConnectInfo()
+            nic.device.connectable.startConnected = True
+            nic.device.connectable.allowGuestControl = True
+            devices.append(nic)
+
+        # Create a SCSI controller for the disk.
+        scsi_key = 1000
+        controller_spec = vim.vm.device.VirtualDeviceSpec()
+        controller_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
+        controller_spec.device = vim.vm.device.ParaVirtualSCSIController()
+        controller_spec.device.key = scsi_key
+        controller_spec.device.sharedBus = vim.vm.device.VirtualSCSIController.Sharing.noSharing
+        controller_spec.device.deviceInfo = vim.Description()
+        devices.append(controller_spec)
+
+        # Create the disk for the device.
+        vdisk = vim.vm.device.VirtualDisk()
+        vdisk.capacityInKB = self.config['disk'] * 1024
+        vdisk.unitNumber = 1
+        vdisk.controllerKey = scsi_key
+
+        # Set the backing filesystem.
+        vdisk_backing_info = vim.vm.device.VirtualDisk.FlatVer2BackingInfo()
+        vdisk_backing_info.diskMode = "persistent"
+        vdisk_backing_info.thinProvisioned = True
+        vdisk.backing = vdisk_backing_info
+
+        vdisk_spec = vim.vm.device.VirtualDeviceSpec()
+        vdisk_spec.device = vdisk
+        vdisk_spec.fileOperation = "create"
+        vdisk_spec.operation = "add"
+        devices.append(vdisk_spec)
+
+        # Configuration for the VM.
+        vmconf = vim.vm.ConfigSpec()
+        vmconf.name = self.config['hostname']
+        vmconf.numCPUs = self.config['cpus']
+        vmconf.memoryMB = self.config['mem']
+        vmconf.files = vmx_file
+        vmconf.deviceChange = devices
+
+        print "Creating VM {}...".format(self.config['hostname'])
+        tasks = [destfolder.CreateVM_Task(config=vmconf, pool=resource_pool)]
+        result = self.WaitForTasks(tasks)
+
     def clone(self):
         self.config['hostname'] = self.config['hostname'].lower()
         self.config['mem'] = int(self.config['mem'] * 1024)  # convert GB to MB
@@ -189,7 +336,6 @@ class EZMomi(object):
         # default 'Resources' pool
         if resource_pool_str == 'Resources' and ('resource_pool' in ip_settings[key]):
             resource_pool_str = ip_settings[key]['resource_pool'] 
-
 
         resource_pool = self.get_resource_pool(cluster, resource_pool_str) 
 
@@ -521,6 +667,30 @@ class EZMomi(object):
                     break
 
         return pool_obj
+
+    '''
+    See if we have a match for a folder object at a specific level.
+    '''
+    def check_folder_level(self, obj, search_name):
+        vmList = obj.childEntity
+        for c in vmList:
+            if isinstance(c, vim.Folder) and c.name == search_name:
+                return c
+        return
+
+    '''
+    Given a folder tree, find the folder object that corresponds to that level.
+    '''
+    def get_folder(self, root_folder, folders):
+        vm_folder = root_folder
+
+        folder_list = folders.split('/')
+        for name in folder_list:
+            vm_folder = self.check_folder_level(vm_folder, name)
+            if not vm_folder:
+                return
+
+        return vm_folder
 
     '''
     Get the vsphere object associated with a given text name

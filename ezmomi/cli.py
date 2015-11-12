@@ -28,6 +28,8 @@ def cli():
         ez.list_objects()
     elif kwargs['mode'] == 'clone':
         ez.clone()
+    elif kwargs['mode'] == 'create':
+        ez.create()
     elif kwargs['mode'] == 'destroy':
         ez.destroy()
     elif kwargs['mode'] == 'listSnapshots':
