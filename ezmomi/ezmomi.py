@@ -172,7 +172,7 @@ class EZMomi(object):
 
         # create the disk for the device
         vdisk = vim.vm.device.VirtualDisk()
-        vdisk.capacityInKB = self.config['disk'] * 1024
+        vdisk.capacityInKB = self.config['disk'] * 1024 * 1024
         vdisk.unitNumber = 1
         vdisk.controllerKey = scsi_key
 
