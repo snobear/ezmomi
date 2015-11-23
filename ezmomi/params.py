@@ -245,6 +245,11 @@ def add_params(subparsers):
         help='Domain, e.g. "example.com"'
     )
     create_parser.add_argument(
+        '--guestid',
+        type=str,
+        help='Guest ID, e.g. "rhel6_64Guest"'
+    )
+    create_parser.add_argument(
         '--resource-pool',
         type=str,
         default='Resources',

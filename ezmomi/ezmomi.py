@@ -197,6 +197,7 @@ class EZMomi(object):
         vmconf.memoryHotAddEnabled = True
         vmconf.files = vmx_file
         vmconf.deviceChange = devices
+        vmconf.guestId = self.config['guestid']
 
         tasks = [destfolder.CreateVM_Task(config=vmconf, pool=resource_pool)]
         result = self.WaitForTasks(tasks)
