@@ -181,6 +181,81 @@ def add_params(subparsers):
         help='Resource Pool, e.g. "Linux Servers"'
     )
 
+    # create
+    create_parser = subparsers.add_parser(
+        'create',
+        help='Create a new VM'
+    )
+    create_parser.add_argument(
+        '--server',
+        type=str,
+        help='vCenter server',
+    )
+    create_parser.add_argument(
+        '--port',
+        type=str,
+        help='vCenter server port',
+    )
+    create_parser.add_argument(
+        '--username',
+        type=str,
+        help='vCenter username',
+    )
+    create_parser.add_argument(
+        '--password',
+        type=str,
+        help='vCenter password',
+    )
+    create_parser.add_argument(
+        '--hostname',
+        required=True,
+        type=str,
+        help='New host name',
+    )
+    create_parser.add_argument(
+        '--ips',
+        type=str,
+        help='Static IPs of new host, separated by a space. '
+             'List primary IP first.',
+        nargs='+',
+    )
+    create_parser.add_argument(
+        '--cpus',
+        type=int,
+        help='Number of CPUs'
+    )
+    create_parser.add_argument(
+        '--mem',
+        type=float,
+        help='Memory in GB'
+    )
+    create_parser.add_argument(
+        '--disk',
+        type=int,
+        help='Disk space in GB'
+    )
+    create_parser.add_argument(
+        '--folder',
+        type=str,
+        help='Folder path for the virtual machine'
+    )
+    create_parser.add_argument(
+        '--domain',
+        type=str,
+        help='Domain, e.g. "example.com"'
+    )
+    create_parser.add_argument(
+        '--guestid',
+        type=str,
+        help='Guest ID, e.g. "rhel6_64Guest"'
+    )
+    create_parser.add_argument(
+        '--resource-pool',
+        type=str,
+        default='Resources',
+        help='Resource Pool, e.g. "Linux Servers"'
+    )
+
     # destroy
     destroy_parser = subparsers.add_parser(
         'destroy',
