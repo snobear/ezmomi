@@ -53,6 +53,17 @@ ezmomi status --name test01
 ezmomi destroy --name test01
 ```
 
+##### VM Snapshot operations
+
+See help for more info on each operation:
+
+```
+ezmomi listSnapshots --help 
+ezmomi createSnapshot --help
+ezmomi removeSnapshot --help
+ezmomi revertSnapshot --help
+```
+
 ##### Listing your resources:
 
 ```
