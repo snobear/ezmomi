@@ -7,5 +7,9 @@ install:
   - "pip install -r requirements.txt"
 script:
   - "ezmomi --help"
-  - "python -m py_compile ezmomi/"
+  # syntax checks
+  - "python -m py_compile ezmomi/ezmomi.py"
+  - "python -m py_compile ezmomi/cli.py"
+  - "python -m py_compile ezmomi/params.py"
+  # pep8 style check
   - "pep8 ezmomi/"

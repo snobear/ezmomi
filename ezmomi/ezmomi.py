@@ -91,7 +91,6 @@ class EZMomi(object):
         """Connect to vCenter server"""
         try:
             context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
-            context.verify_mode = ssl.CERT_NONE
             self.si = SmartConnect(
                         host=self.config['server'],
                         user=self.config['username'],
