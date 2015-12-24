@@ -16,8 +16,12 @@ class EZMomi(object):
     def __init__(self, **kwargs):
         """load up our configs and connect to the vSphere server"""
         self.config = self.get_configs(kwargs)
+        self.debug = self.config['debug']
         self.connect()
         self._column_spacing = 4
+
+    def print_debug(self, title, msg):
+        print "DEBUG: %s\n%s" % (title, msg)
 
     def get_configs(self, kwargs):
         default_cfg_dir = "%s/.config/ezmomi" % os.path.expanduser("~")
@@ -61,8 +65,8 @@ class EZMomi(object):
         try:
             config = yaml.load(file(config_file))
         except IOError:
-            print "Unable to open config file. The default ezmomi config "  \
-                  " filepath is ~/.config/ezmomi/config.yml. You can also " \
+            print "Unable to open config file. The default ezmomi config "\
+                  "filepath is ~/.config/ezmomi/config.yml. You can also "\
                   "specify the config file path by setting the EZMOMI_CONFIG "\
                   "environment variable."
             sys.exit(1)
@@ -97,6 +101,8 @@ class EZMomi(object):
                         pwd=self.config['password'],
                         port=int(self.config['port']),
                         sslContext=context,
+                        certFile=None,
+                        keyFile=None,
                         )
         except Exception as e:
             print 'Unable to connect to vsphere server.'
@@ -202,16 +208,25 @@ class EZMomi(object):
 
         resource_pool = self.get_resource_pool(cluster, resource_pool_str)
 
+        if self.debug:
+           self.print_debug("Destination cluster",
+               pformat(vars(cluster)))
+           self.print_debug("Resource pool",
+               pformat(vars(resource_pool)))
+
         if resource_pool is None:
             # use default resource pool of target cluster
             resource_pool = cluster.resourcePool
 
-        datastore = self.get_obj([vim.Datastore], ip_settings[0]['datastore'])
-
-        if datastore is None:
-            print "Error: Unable to find Datastore '%s'" \
-                % ip_settings[0]['datastore']
-            sys.exit(1)
+        datastore = None
+        if datastore in ip_settings[0]:
+            datastore = self.get_obj(
+                [vim.Datastore],
+                ip_settings[0]['datastore'])
+            if datastore is None:
+                print "Error: Unable to find Datastore '%s'" \
+                    % ip_settings[0]['datastore']
+                sys.exit(1)
 
         template_vm = self.get_vm_failfast(
             self.config['template'],
@@ -317,6 +332,9 @@ class EZMomi(object):
         clonespec.powerOn = True
         clonespec.template = False
 
+        if self.debug:
+            self.print_debug("CloneSpec", pformat(clonespec))
+
         # fire the clone task
         tasks = [template_vm.Clone(folder=destfolder,
                                    name=self.config['hostname'],
@@ -332,7 +350,8 @@ class EZMomi(object):
         tasks = list()
 
         destroyed = 'no'
-        if 'silent' in self.config:
+
+        if self.config['silent']:
             destroyed = 'yes'
         else:
             destroyed = raw_input(

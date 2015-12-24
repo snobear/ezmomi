@@ -1,10 +1,37 @@
 """Command line option definitions"""
 
 
-def add_params(subparsers):
+def arg_setup():
+    from .version import __version__
+    import argparse
+
+    main_parser = argparse.ArgumentParser(
+        description="Perform common vSphere API tasks"
+    )
+
+    subparsers = main_parser.add_subparsers(help="Command", dest="mode")
+
+    main_parser.add_argument(
+        "--version",
+        action="version",
+        version="ezmomi version %s" % __version__
+    )
+
+    # specify any arguments that are common to all subcommands
+    common_parser = argparse.ArgumentParser(
+        add_help=False,
+        description="Shared/common arguments for all subcommands"
+    )
+    common_parser.add_argument(
+        "--debug",
+        action='store_true',
+        help="Print debug messages"
+    )
+
     # list
     list_parser = subparsers.add_parser(
         "list",
+        parents=[common_parser],
         help="List VMware objects on your VMware server"
     )
 
@@ -26,6 +53,7 @@ def add_params(subparsers):
 
     create_snapshot_parser = subparsers.add_parser(
         "createSnapshot",
+        parents=[common_parser],
         help="Create snapshot for a VM"
     )
     create_snapshot_parser.add_argument(
@@ -60,6 +88,7 @@ def add_params(subparsers):
 
     remove_snapshot_parser = subparsers.add_parser(
         "removeSnapshot",
+        parents=[common_parser],
         help="Remove snapshot for a VM"
     )
     remove_snapshot_parser.add_argument(
@@ -90,6 +119,7 @@ def add_params(subparsers):
 
     revert_snapshot_parser = subparsers.add_parser(
         "revertSnapshot",
+        parents=[common_parser],
         help="Revert snapshot for a VM"
     )
     revert_snapshot_parser.add_argument(
@@ -121,27 +151,8 @@ def add_params(subparsers):
     # clone
     clone_parser = subparsers.add_parser(
         "clone",
+        parents=[common_parser],
         help="Clone a VM template to a new VM"
-    )
-    clone_parser.add_argument(
-        "--server",
-        type=str,
-        help="vCenter server",
-    )
-    clone_parser.add_argument(
-        "--port",
-        type=str,
-        help="vCenter server port",
-    )
-    clone_parser.add_argument(
-        "--username",
-        type=str,
-        help="vCenter username",
-    )
-    clone_parser.add_argument(
-        "--password",
-        type=str,
-        help="vCenter password",
     )
     clone_parser.add_argument(
         "--template",
@@ -186,6 +197,7 @@ def add_params(subparsers):
     # destroy
     destroy_parser = subparsers.add_parser(
         "destroy",
+        parents=[common_parser],
         help="Destroy/delete a Virtual Machine"
     )
     destroy_parser.add_argument(
@@ -196,12 +208,14 @@ def add_params(subparsers):
     destroy_parser.add_argument(
         "--silent",
         help="Silently destroy a VM (default is false and can be set to true)",
+        default=False,
         action="store_true"
     )
 
     # status
     status_parser = subparsers.add_parser(
         "status",
+        parents=[common_parser],
         help="Get a Virtual Machine's power status"
     )
     status_parser.add_argument(
@@ -213,6 +227,7 @@ def add_params(subparsers):
     # shutdown
     shutdown_parser = subparsers.add_parser(
         "shutdown",
+        parents=[common_parser],
         help="Shutdown a Virtual Machine "
              "(will fall back to powerOff if guest tools are not running)"
     )
@@ -225,6 +240,7 @@ def add_params(subparsers):
     # powerOff
     powerOff_parser = subparsers.add_parser(
         "powerOff",
+        parents=[common_parser],
         help="Power Off a Virtual Machine (not a clean shutdown)"
     )
     powerOff_parser.add_argument(
@@ -236,6 +252,7 @@ def add_params(subparsers):
     # powerOn
     powerOn_parser = subparsers.add_parser(
         "powerOn",
+        parents=[common_parser],
         help="Power On a Virtual Machine"
     )
     powerOn_parser.add_argument(
@@ -243,3 +260,5 @@ def add_params(subparsers):
         required=True,
         help="VM name (case-sensitive)"
     )
+
+    return main_parser.parse_args()
