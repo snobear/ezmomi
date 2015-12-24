@@ -209,10 +209,14 @@ class EZMomi(object):
         resource_pool = self.get_resource_pool(cluster, resource_pool_str)
 
         if self.debug:
-           self.print_debug("Destination cluster",
-               pformat(vars(cluster)))
-           self.print_debug("Resource pool",
-               pformat(vars(resource_pool)))
+            self.print_debug(
+                "Destination cluster",
+                pformat(vars(cluster))
+            )
+            self.print_debug(
+                "Resource pool",
+                pformat(vars(resource_pool))
+            )
 
         if resource_pool is None:
             # use default resource pool of target cluster
