@@ -252,7 +252,10 @@ class EZMomi(object):
         if template_vm.config.hardware.device:
             for device in template_vm.config.hardware.device:
                 if self.debug:
-                    self.print_debug("Existing hardware devices in template", pformat(template_vm.config.hardware.device))
+                    self.print_debug(
+                        "Existing hardware devices in template",
+                        pformat(template_vm.config.hardware.device)
+                    )
 
                 if hasattr(device, 'addressType'):
                     # this is a VirtualEthernetCard, so we'll delete it
