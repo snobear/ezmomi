@@ -20,8 +20,13 @@ class EZMomi(object):
         self.connect()
         self._column_spacing = 4
 
-    def print_debug(self, title, msg):
-        print "DEBUG: %s\n%s" % (title, msg)
+    def print_debug(self, title, obj):
+        try:
+            msg = vars(obj)
+        except:
+            msg = obj
+
+        print "DEBUG: %s\n%s" % (title, pformat(msg))
 
     def get_configs(self, kwargs):
         default_cfg_dir = "%s/.config/ezmomi" % os.path.expanduser("~")
@@ -211,11 +216,11 @@ class EZMomi(object):
         if self.debug:
             self.print_debug(
                 "Destination cluster",
-                pformat(vars(cluster))
+                cluster
             )
             self.print_debug(
                 "Resource pool",
-                pformat(vars(resource_pool))
+                resource_pool
             )
 
         if resource_pool is None:
@@ -241,7 +246,9 @@ class EZMomi(object):
         # Relocation spec
         relospec = vim.vm.RelocateSpec()
         relospec.datastore = datastore
-        relospec.pool = resource_pool
+
+        if resource_pool:
+            relospec.pool = resource_pool
 
         # Networking self.config for VM and guest OS
         devices = []
@@ -249,13 +256,8 @@ class EZMomi(object):
 
         # add existing NIC devices from template to our list of NICs
         # to be created
-        if template_vm.config.hardware.device:
+        try:
             for device in template_vm.config.hardware.device:
-                if self.debug:
-                    self.print_debug(
-                        "Existing hardware devices in template",
-                        pformat(template_vm.config.hardware.device)
-                    )
 
                 if hasattr(device, 'addressType'):
                     # this is a VirtualEthernetCard, so we'll delete it
@@ -264,6 +266,10 @@ class EZMomi(object):
                         vim.vm.device.VirtualDeviceSpec.Operation.remove
                     nic.device = device
                     devices.append(nic)
+        except:
+            # not the most graceful handling, but unable to reproduce
+            # user's issues in #57 at this time.
+            pass
 
         # create a Network device for each static IP
         for key, ip in enumerate(ip_settings):
@@ -345,7 +351,7 @@ class EZMomi(object):
         clonespec.template = False
 
         if self.debug:
-            self.print_debug("CloneSpec", pformat(clonespec))
+            self.print_debug("CloneSpec", clonespec)
 
         # fire the clone task
         tasks = [template_vm.Clone(folder=destfolder,
