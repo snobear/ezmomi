@@ -1,47 +1,75 @@
-'''
-Command line option definitions
-'''
-def add_params(subparsers):
+"""Command line option definitions"""
+
+
+def arg_setup():
+    from .version import __version__
+    import argparse
+
+    main_parser = argparse.ArgumentParser(
+        description="Perform common vSphere API tasks"
+    )
+
+    subparsers = main_parser.add_subparsers(help="Command", dest="mode")
+
+    main_parser.add_argument(
+        "--version",
+        action="version",
+        version="ezmomi version %s" % __version__
+    )
+
+    # specify any arguments that are common to all subcommands
+    common_parser = argparse.ArgumentParser(
+        add_help=False,
+        description="Shared/common arguments for all subcommands"
+    )
+    common_parser.add_argument(
+        "--debug",
+        action='store_true',
+        help="Print debug messages"
+    )
+
     # list
     list_parser = subparsers.add_parser(
-        'list',
-        help='List VMware objects on your VMware server'
+        "list",
+        parents=[common_parser],
+        help="List VMware objects on your VMware server"
     )
 
     list_parser.add_argument(
-        '--type',
+        "--type",
         required=True,
-        help='Object type, e.g. Network, VirtualMachine.'
+        help="Object type, e.g. Network, VirtualMachine."
     )
 
     list_snapshot_parser = subparsers.add_parser(
-        'listSnapshots',
-        help='List snapshots for a VM'
+        "listSnapshots",
+        help="List snapshots for a VM"
     )
     list_snapshot_parser.add_argument(
-        '--vm',
+        "--vm",
         required=True,
-        help='VM name (case-sensitive)'
+        help="VM name (case-sensitive)"
     )
 
     create_snapshot_parser = subparsers.add_parser(
-        'createSnapshot',
-        help='Create snapshot for a VM'
+        "createSnapshot",
+        parents=[common_parser],
+        help="Create snapshot for a VM"
     )
     create_snapshot_parser.add_argument(
-        '--vm',
+        "--vm",
         required=True,
-        help='VM name (case-sensitive)'
+        help="VM name (case-sensitive)"
     )
     create_snapshot_parser.add_argument(
-        '--name',
+        "--name",
         required=True,
-        help='Snapshot name (case-sensitive)'
+        help="Snapshot name (case-sensitive)"
     )
     create_snapshot_parser.add_argument(
-        '--memory',
+        "--memory",
         required=False,
-        action='store_true',
+        action="store_true",
         default=False,
         help=("When set, a dump of the internal state of the virtual "
               "machine (basically a memory dump) is included in the "
@@ -49,9 +77,9 @@ def add_params(subparsers):
               "is set to powered off.")
     )
     create_snapshot_parser.add_argument(
-        '--quiesce',
+        "--quiesce",
         required=False,
-        action='store_true',
+        action="store_true",
         default=True,
         help=("When set and the virtual machine is powered on when the "
               "snapshot is taken, VMware Tools is used to quiesce "
@@ -59,58 +87,62 @@ def add_params(subparsers):
     )
 
     remove_snapshot_parser = subparsers.add_parser(
-        'removeSnapshot',
-        help='Remove snapshot for a VM'
+        "removeSnapshot",
+        parents=[common_parser],
+        help="Remove snapshot for a VM"
     )
     remove_snapshot_parser.add_argument(
-        '--vm',
+        "--vm",
         required=True,
-        help='VM name (case-sensitive)'
+        help="VM name (case-sensitive)"
     )
     remove_snapshot_parser.add_argument(
-        '--name',
+        "--name",
         required=True,
-        help='Snapshot name (case-sensitive)'
+        help="Snapshot name (case-sensitive)"
     )
     remove_snapshot_parser.add_argument(
-        '--remove-children',
+        "--remove-children",
         required=False,
-        action='store_true',
+        action="store_true",
         default=False,
-        help='Flag to specify removal of the entire snapshot subtree'
+        help="Flag to specify removal of the entire snapshot subtree"
     )
     remove_snapshot_parser.add_argument(
-        '--consolidate',
+        "--consolidate",
         required=False,
-        action='store_true',
+        action="store_true",
         default=True,
-        help='If true, the virtual disk associated with this snapshot will be merged with other disk if possible'
+        help="If true, the virtual disk associated with this snapshot "
+             "will be merged with other disk if possible"
     )
 
     revert_snapshot_parser = subparsers.add_parser(
-        'revertSnapshot',
-        help='Revert snapshot for a VM'
+        "revertSnapshot",
+        parents=[common_parser],
+        help="Revert snapshot for a VM"
     )
     revert_snapshot_parser.add_argument(
-        '--vm',
+        "--vm",
         required=True,
-        help='VM name (case-sensitive)'
+        help="VM name (case-sensitive)"
     )
     revert_snapshot_parser.add_argument(
-        '--name',
+        "--name",
         required=True,
-        help='Snapshot name (case-sensitive)'
+        help="Snapshot name (case-sensitive)"
     )
     revert_snapshot_parser.add_argument(
-        '--host',
+        "--host",
         required=False,
         type=str,
-        help='Choice of host for the virtual machine, in case this operation causes the virtual machine to power on.'
+        help="Choice of host for the virtual machine, in case this operation "
+             "causes the virtual machine to power on."
     )
     revert_snapshot_parser.add_argument(
-        '--suppress-power-on',
+        "--suppress-power-on",
         required=False,
-        action='store_true',
+        action="store_true",
         default=False,
         help=("When set, the virtual machine will not be powered on regardless"
               "of the power state when the snapshot was created")
@@ -118,125 +150,115 @@ def add_params(subparsers):
 
     # clone
     clone_parser = subparsers.add_parser(
-        'clone',
-        help='Clone a VM template to a new VM'
+        "clone",
+        parents=[common_parser],
+        help="Clone a VM template to a new VM"
     )
     clone_parser.add_argument(
-        '--server',
+        "--template",
         type=str,
-        help='vCenter server',
+        help="VM template name to clone from"
     )
     clone_parser.add_argument(
-        '--port',
-        type=str,
-        help='vCenter server port',
-    )
-    clone_parser.add_argument(
-        '--username',
-        type=str,
-        help='vCenter username',
-    )
-    clone_parser.add_argument(
-        '--password',
-        type=str,
-        help='vCenter password',
-    )
-    clone_parser.add_argument(
-        '--template',
-        type=str,
-        help='VM template name to clone from'
-    )
-    clone_parser.add_argument(
-        '--hostname',
+        "--hostname",
         required=True,
         type=str,
-        help='New host name',
+        help="New host name",
     )
     clone_parser.add_argument(
-        '--ips',
+        "--ips",
         type=str,
-        help='Static IPs of new host, separated by a space. '
-             'List primary IP first.',
-        nargs='+',
+        help="Static IPs of new host, separated by a space. "
+             "List primary IP first.",
+        nargs="+",
     )
     clone_parser.add_argument(
-        '--cpus',
+        "--cpus",
         type=int,
-        help='Number of CPUs'
+        help="Number of CPUs"
     )
     clone_parser.add_argument(
-        '--mem',
+        "--mem",
         type=float,
-        help='Memory in GB'
+        help="Memory in GB"
     )
     clone_parser.add_argument(
-        '--domain',
+        "--domain",
         type=str,
-        help='Domain, e.g. "example.com"'
+        help="Domain, e.g. example.com"
     )
     clone_parser.add_argument(
-        '--resource-pool',
+        "--resource-pool",
         type=str,
-        default='Resources',
-        help='Resource Pool, e.g. "Linux Servers"'
+        default="Resources",
+        help="Resource Pool, e.g. 'Linux Servers'"
     )
 
     # destroy
     destroy_parser = subparsers.add_parser(
-        'destroy',
-        help='Destroy/delete a Virtual Machine'
+        "destroy",
+        parents=[common_parser],
+        help="Destroy/delete a Virtual Machine"
     )
     destroy_parser.add_argument(
-        '--name',
+        "--name",
         required=True,
-        help='VM name (case-sensitive)'
+        help="VM name (case-sensitive)"
     )
     destroy_parser.add_argument(
-        '--silent',
-        help='Silently destroy a VM (default is false and can be set to true)',
-        action='store_true'
+        "--silent",
+        help="Silently destroy a VM (default is false and can be set to true)",
+        default=False,
+        action="store_true"
     )
 
     # status
     status_parser = subparsers.add_parser(
-        'status',
+        "status",
+        parents=[common_parser],
         help="Get a Virtual Machine's power status"
     )
     status_parser.add_argument(
-        '--name',
+        "--name",
         required=True,
-        help='VM name (case-sensitive)'
+        help="VM name (case-sensitive)"
     )
 
     # shutdown
     shutdown_parser = subparsers.add_parser(
-        'shutdown',
-        help="Shutdown a Virtual Machine (will fall back to powerOff if guest tools are not running)"
+        "shutdown",
+        parents=[common_parser],
+        help="Shutdown a Virtual Machine "
+             "(will fall back to powerOff if guest tools are not running)"
     )
     shutdown_parser.add_argument(
-        '--name',
+        "--name",
         required=True,
-        help='VM name (case-sensitive)'
+        help="VM name (case-sensitive)"
     )
 
     # powerOff
     powerOff_parser = subparsers.add_parser(
-        'powerOff',
+        "powerOff",
+        parents=[common_parser],
         help="Power Off a Virtual Machine (not a clean shutdown)"
     )
     powerOff_parser.add_argument(
-        '--name',
+        "--name",
         required=True,
-        help='VM name (case-sensitive)'
+        help="VM name (case-sensitive)"
     )
 
     # powerOn
     powerOn_parser = subparsers.add_parser(
-        'powerOn',
+        "powerOn",
+        parents=[common_parser],
         help="Power On a Virtual Machine"
     )
     powerOn_parser.add_argument(
-        '--name',
+        "--name",
         required=True,
-        help='VM name (case-sensitive)'
+        help="VM name (case-sensitive)"
     )
+
+    return main_parser.parse_args()
