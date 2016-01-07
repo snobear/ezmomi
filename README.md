@@ -1,4 +1,4 @@
-![alt text](https://travis-ci.org/snobear/ezmomi.svg?branch=develop "travis build status")
+![alt text](https://travis-ci.org/snobear/ezmomi.svg?branch=master "travis build status")
 ezmomi
 ======
 
@@ -6,6 +6,15 @@ A simple command line interface for common VMware vSphere tasks.
 
 EZmomi uses [pyvmomi](https://github.com/vmware/pyvmomi) (VMware vSphere API Python Bindings).
 
+
+### Requirements
+
+```
+vSphere 6
+Python 2.7
+```
+
+(If you are using vSphere 5, install the older ezmomi 0.x:  `pip install ezmomi==0.4.2`)
 
 ### Install
 
@@ -18,7 +27,7 @@ pip install ezmomi
 ##### Clone a template with two static IPs:
 
 ```
-ezmomi clone --template centos65 --hostname test01 --cpus 2 --mem 4 --ips 172.10.16.203 172.10.16.204
+ezmomi clone --template centos67 --hostname test01 --cpus 2 --mem 4 --ips 172.10.16.203 172.10.16.204
 ```
 
 `ips` takes any number of ips.  See `ezmomi clone --help` for a list of params.
@@ -58,7 +67,7 @@ ezmomi destroy --name test01
 See help for more info on each operation:
 
 ```
-ezmomi listSnapshots --help 
+ezmomi listSnapshots --help
 ezmomi createSnapshot --help
 ezmomi removeSnapshot --help
 ezmomi revertSnapshot --help
@@ -73,7 +82,7 @@ ezmomi list --type Datastore
 etc...
 ```
 
-See [Managed Object Types](http://pubs.vmware.com/vsphere-50/index.jsp#com.vmware.wssdk.apiref.doc_50/mo-types-landing.html) in the vSphere API docs for a list of types to look up.
+See [Managed Object Types](http://pubs.vmware.com/vsphere-60/topic/com.vmware.wssdk.apiref.doc/mo-types-landing.html) in the vSphere API docs for a list of types to look up.
 
 ### Help
 
@@ -90,6 +99,7 @@ etc...
 
 ```
 git clone git@github.com:snobear/ezmomi.git
+# using python2.7 virtualenv
 virtualenv --no-site-packages ezmomi
 cd ezmomi && source bin/activate
 pip install -r requirements.txt
