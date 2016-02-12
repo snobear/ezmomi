@@ -228,7 +228,7 @@ class EZMomi(object):
             resource_pool = cluster.resourcePool
 
         datastore = None
-        if datastore in ip_settings[0]:
+        if 'datastore' in ip_settings[0]:
             datastore = self.get_obj(
                 [vim.Datastore],
                 ip_settings[0]['datastore'])
@@ -587,13 +587,13 @@ class EZMomi(object):
         return pool_obj
 
     def get_obj(self, vimtype, name, return_all=False):
-        """Get the vsphere object associated with a given text name"""
+        """Get the vsphere object associated with a given text name or MOID"""
         obj = list()
         container = self.content.viewManager.CreateContainerView(
             self.content.rootFolder, vimtype, True)
 
         for c in container.view:
-            if c.name == name:
+            if name in [c.name, c._GetMoId()]:
                 if return_all is False:
                     return c
                     break
@@ -605,17 +605,6 @@ class EZMomi(object):
         else:
             # for backwards-compat
             return None
-
-    def get_obj_by_moid(self, vimtype, moid):
-        """Get the vsphere object associated with a given MoId"""
-        obj = None
-        container = self.content.viewManager.CreateContainerView(
-            self.content.rootFolder, vimtype, True)
-        for c in container.view:
-            if c._GetMoId() == moid:
-                obj = c
-                break
-        return obj
 
     def get_host_system(self, name):
         return self.get_obj([vim.HostSystem], name)
