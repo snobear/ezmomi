@@ -1,4 +1,4 @@
-![alt text](https://travis-ci.org/snobear/ezmomi.svg?branch=master "travis build status")
+![alt text](https://travis-ci.org/imsweb/ezmomi.svg?branch=master "travis build status")
 ezmomi
 ======
 
@@ -98,7 +98,7 @@ etc...
 ### Install via github
 
 ```
-git clone git@github.com:snobear/ezmomi.git
+git clone git@github.com:imsweb/ezmomi.git
 # using python2.7 virtualenv
 virtualenv --no-site-packages ezmomi
 cd ezmomi && source bin/activate
