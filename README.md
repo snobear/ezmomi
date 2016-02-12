@@ -1,8 +1,8 @@
-![alt text](https://travis-ci.org/snobear/ezmomi.svg?branch=master "travis build status")
+[![Build Status](https://travis-ci.org/imsweb/ezmomi.svg?branch=master)](https://travis-ci.org/imsweb/ezmomi)
 ezmomi
 ======
 
-A simple command line interface for common VMware vSphere tasks.
+A simple Linux command line interface for common VMware vSphere VM tasks.
 
 EZmomi uses [pyvmomi](https://github.com/vmware/pyvmomi) (VMware vSphere API Python Bindings).
 
@@ -98,7 +98,7 @@ etc...
 ### Install via github
 
 ```
-git clone git@github.com:snobear/ezmomi.git
+git clone git@github.com:imsweb/ezmomi.git
 # using python2.7 virtualenv
 virtualenv --no-site-packages ezmomi
 cd ezmomi && source bin/activate
