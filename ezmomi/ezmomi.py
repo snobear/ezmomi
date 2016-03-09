@@ -204,7 +204,6 @@ class EZMomi(object):
                                )
 
         resource_pool_str = self.config['resource_pool']
-
         # resource_pool setting in config file takes priority over the
         # default 'Resources' pool
         if resource_pool_str == 'Resources' \
@@ -212,6 +211,12 @@ class EZMomi(object):
             resource_pool_str = ip_settings[key]['resource_pool']
 
         resource_pool = self.get_resource_pool(cluster, resource_pool_str)
+
+        host_system = self.config['host']
+        if host_system != "":
+            host_system = self.get_obj([vim.HostSystem],
+                                   self.config['host']
+                                   )
 
         if self.debug:
             self.print_debug(
@@ -246,6 +251,8 @@ class EZMomi(object):
         # Relocation spec
         relospec = vim.vm.RelocateSpec()
         relospec.datastore = datastore
+        if host_system:
+            relospec.host = host_system
 
         if resource_pool:
             relospec.pool = resource_pool

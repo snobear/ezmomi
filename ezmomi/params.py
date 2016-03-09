@@ -160,6 +160,14 @@ def arg_setup():
         help="VM template name to clone from"
     )
     clone_parser.add_argument(
+        "--host",
+        required=False,
+        type=str,
+        default="",
+        help="Choice of host for the virtual machine to run on."
+             "if not specified, the host system is auto-selected by vsphere."
+    )
+    clone_parser.add_argument(
         "--hostname",
         required=True,
         type=str,
