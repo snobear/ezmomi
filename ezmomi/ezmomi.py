@@ -215,8 +215,8 @@ class EZMomi(object):
         host_system = self.config['host']
         if host_system != "":
             host_system = self.get_obj([vim.HostSystem],
-                                   self.config['host']
-                                   )
+                                       self.config['host']
+                                       )
 
         if self.debug:
             self.print_debug(
