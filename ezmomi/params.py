@@ -201,6 +201,11 @@ def arg_setup():
         default="Resources",
         help="Resource Pool, e.g. 'Linux Servers'"
     )
+    clone_parser.add_argument(
+        "--post-clone-cmd",
+        type=str,
+        help="Command to run after clone. This is run from the same shell that ezmomi is called from. Useful in running extra provisioning steps."
+    )
 
     # destroy
     destroy_parser = subparsers.add_parser(

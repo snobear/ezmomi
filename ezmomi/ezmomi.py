@@ -367,6 +367,15 @@ class EZMomi(object):
                                    )]
         result = self.WaitForTasks(tasks)
 
+        if self.config['post_clone_cmd']:
+            try:
+                print "Running --post-clone-cmd %s" % self.config['post_clone_cmd']
+                os.system(self.config['post_clone_cmd'])
+
+            except Exception as e:
+                print "Error running post-clone command. Exception: %s" % e
+                pass
+
         # send notification email
         if self.config['mail']:
             self.send_email()
