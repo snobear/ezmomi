@@ -369,7 +369,8 @@ class EZMomi(object):
 
         if self.config['post_clone_cmd']:
             try:
-                print "Running --post-clone-cmd %s" % self.config['post_clone_cmd']
+                print "Running --post-clone-cmd %s" % \
+                    self.config['post_clone_cmd']
                 os.system(self.config['post_clone_cmd'])
 
             except Exception as e:
