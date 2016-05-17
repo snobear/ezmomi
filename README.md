@@ -32,6 +32,13 @@ ezmomi clone --template centos67 --hostname test01 --cpus 2 --mem 4 --ips 172.10
 
 `ips` takes any number of ips.  See `ezmomi clone --help` for a list of params.
 
+To optionally run a command/script after clone has started:
+
+```
+ezmomi clone --template centos67 --hostname test01 --cpus 2 --mem 4 --ips 172.10.16.203 172.10.16.204 --post-clone-cmd /usr/local/bin/additional-provisioning-steps.sh
+```
+
+This example would run /usr/local/bin/additional-provisioning-steps.sh on the same host ezmomi is run on. You can reference the `EZMOMI_CLONE_HOSTNAME` environment variable in your script to retrieve the `--hostname`.
 
 ##### Power Operations 
 
