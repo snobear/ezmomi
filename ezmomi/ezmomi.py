@@ -369,6 +369,8 @@ class EZMomi(object):
 
         if self.config['post_clone_cmd']:
             try:
+                # helper env variables
+                os.environ['EZMOMI_CLONE_HOSTNAME'] = self.config['hostname']
                 print "Running --post-clone-cmd %s" % \
                     self.config['post_clone_cmd']
                 os.system(self.config['post_clone_cmd'])
