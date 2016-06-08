@@ -135,6 +135,7 @@ def arg_setup():
     revert_snapshot_parser.add_argument(
         "--host",
         required=False,
+        default="",
         type=str,
         help="Choice of host for the virtual machine, in case this operation "
              "causes the virtual machine to power on."
