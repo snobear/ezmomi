@@ -89,7 +89,6 @@ class EZMomi(object):
             elif (value is None) and (key not in config):
                 # compile list of parameters that were not set
                 notset.append(key)
-
         if notset:
             print "Required parameters not set: %s\n" % notset
             sys.exit(1)
@@ -514,10 +513,15 @@ class EZMomi(object):
 
     def revertSnapshot(self):
         tasks = []
-
         snapshot = self.get_snapshot_by_name(self.config['vm'],
                                              self.config['name'])
-        host_system = self.get_host_system_failfast(self.config['host'])
+        if self.config['host']:
+            host = self.config['host']
+        else:
+            vm = self.get_vm_failfast(self.config['vm'])
+            host = vm.runtime.host.name
+        host_system = self.get_host_system_failfast(host)
+
         tasks.append(
             snapshot.Revert(host=host_system,
                             suppressPowerOn=self.config['suppress_power_on'])
