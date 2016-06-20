@@ -510,7 +510,7 @@ class EZMomi(object):
     def print_as_lines(self, data):
         maxlen = 0
         for row in data:
-            maxlen = len(row) if len(row)>maxlen else maxlen
+            maxlen = len(row) if len(row) > maxlen else maxlen
 
         # all rows will have same size
         for row in data:
