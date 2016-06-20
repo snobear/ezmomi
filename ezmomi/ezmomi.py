@@ -148,7 +148,7 @@ class EZMomi(object):
             else:
                 rows.append([c._moId, c.name])
 
-        self.tabulate(rows)
+        self.print_as_table(rows)
 
     def clone(self):
         """
@@ -407,7 +407,28 @@ class EZMomi(object):
     def status(self):
         """Check power status"""
         vm = self.get_vm_failfast(self.config['name'])
-        self.tabulate([[vm.name, vm.runtime.powerState]])
+        extra = self.config['extra']
+        parserFriendly = self.config['parserFriendly']
+
+        status_to_print = []
+        if extra:
+            status_to_print = \
+                [["vmname", "powerstate", "ipaddress", "hostname", "memory",
+                  "cpunum", "uuid", "guestid", "uptime"]] + \
+                [[vm.name, vm.runtime.powerState,
+                  vm.summary.guest.ipAddress or '',
+                  vm.summary.guest.hostName or '',
+                  str(vm.summary.config.memorySizeMB),
+                  str(vm.summary.config.numCpu),
+                  vm.summary.config.uuid, vm.summary.guest.guestId,
+                  str(vm.summary.quickStats.uptimeSeconds) or '0']]
+        else:
+            status_to_print = [[vm.name, vm.runtime.powerState]]
+
+        if parserFriendly:
+            self.print_as_lines(status_to_print)
+        else:
+            self.print_as_table(status_to_print)
 
     def shutdown(self):
         """
@@ -464,7 +485,7 @@ class EZMomi(object):
                     self.get_all_snapshots(vm) if
                     snapshot.name == name)
 
-    def tabulate(self, data):
+    def print_as_table(self, data):
         column_widths = []
 
         for row in data:
@@ -486,6 +507,23 @@ class EZMomi(object):
         for row in data:
             print format.format(*row)
 
+    def print_as_lines(self, data):
+        maxlen = 0
+        for row in data:
+            maxlen = len(row) if len(row) > maxlen else maxlen
+
+        # all rows will have same size
+        for row in data:
+            row.extend((maxlen-len(row)) * [''])
+
+        rowNr = len(data)
+        for index in range(0, maxlen):
+            for row in range(0, rowNr-1):
+                sys.stdout.write(str(data[row][index]))
+                sys.stdout.write("=")
+            sys.stdout.write(str(data[rowNr-1][index]))
+            print
+
     def listSnapshots(self):
         root_snapshot_list = self.get_all_snapshots(self.config['vm'])
 
@@ -496,7 +534,7 @@ class EZMomi(object):
                                   str(snapshot.createTime)])
 
             data = [['VM', 'Snapshot', 'Create Time']] + snapshots
-            self.tabulate(data)
+            self.print_as_table(data)
         else:
             print "No snapshots for %s" % self.config['vm']
 
