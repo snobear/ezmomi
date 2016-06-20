@@ -239,6 +239,21 @@ def arg_setup():
         required=True,
         help="VM name (case-sensitive)"
     )
+    status_parser.add_argument(
+        "--extra",
+        required=False,
+        action='store_true',
+        default=False,
+        help="Extra VM status (vm name, power status, ip address, hostname, "
+             "memory, cpu num, uuid, guest id, uptime)"
+    )
+    status_parser.add_argument(
+        "--parserFriendly",
+        required=False,
+        action='store_true',
+        default=False,
+        help="Friendly output for easy parsing"
+    )
 
     # shutdown
     shutdown_parser = subparsers.add_parser(
