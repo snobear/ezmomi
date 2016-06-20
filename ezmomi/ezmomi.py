@@ -508,20 +508,20 @@ class EZMomi(object):
             print format.format(*row)
 
     def print_as_lines(self, data):
-        maxLen = 0
+        maxlen = 0
         for row in data:
-            maxLen = len(row) if len(row)>maxLen else maxLen
+            maxlen = len(row) if len(row)>maxlen else maxlen
 
         # all rows will have same size
         for row in data:
-            row.extend((maxLen-len(row)) * [''])
+            row.extend((maxlen-len(row)) * [''])
 
         rowNr = len(data)
-        for index in range(0, maxLen):
+        for index in range(0, maxlen):
             for row in range(0, rowNr-1):
                 sys.stdout.write(str(data[row][index]))
                 sys.stdout.write("=")
-            sys.stdout.write (str(data[rowNr-1][index]))
+            sys.stdout.write(str(data[rowNr-1][index]))
             print
 
     def listSnapshots(self):
