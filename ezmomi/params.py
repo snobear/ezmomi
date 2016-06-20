@@ -244,7 +244,8 @@ def arg_setup():
         required=False,
         action='store_true',
         default=False,
-        help="Extra VM status (vm name, power status, ip address, hostname, memory, cpu num, uuid, guest id, uptime)"
+        help="Extra VM status (vm name, power status, ip address, hostname, "
+             "memory, cpu num, uuid, guest id, uptime)"
     )
     status_parser.add_argument(
         "--parserFriendly",

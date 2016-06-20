@@ -412,11 +412,16 @@ class EZMomi(object):
 
         status_to_print = []
         if extra:
-            status_to_print = [["vmname", "powerstate", "ipaddress", "hostname", "memory", "cpunum", "uuid", "guestid", "uptime"]] + \
-                              [[vm.name, vm.runtime.powerState, vm.summary.guest.ipAddress or '',
-                                vm.summary.guest.hostName or '', str(vm.summary.config.memorySizeMB),
-                                str(vm.summary.config.numCpu), vm.summary.config.uuid, vm.summary.guest.guestId,
-                                str(vm.summary.quickStats.uptimeSeconds) or '0']]
+            status_to_print = \
+                [["vmname", "powerstate", "ipaddress", "hostname", "memory",
+                  "cpunum", "uuid", "guestid", "uptime"]] + \
+                [[vm.name, vm.runtime.powerState,
+                  vm.summary.guest.ipAddress or '',
+                  vm.summary.guest.hostName or '',
+                  str(vm.summary.config.memorySizeMB),
+                  str(vm.summary.config.numCpu),
+                  vm.summary.config.uuid, vm.summary.guest.guestId,
+                  str(vm.summary.quickStats.uptimeSeconds) or '0']]
         else:
             status_to_print = [[vm.name, vm.runtime.powerState]]
 
@@ -505,7 +510,7 @@ class EZMomi(object):
     def print_as_lines(self, data):
         maxLen = 0
         for row in data:
-            maxLen=len(row) if len(row) > maxLen else maxLen
+            maxLen = len(row) if len(row)>maxLen else maxLen
 
         # all rows will have same size
         for row in data:
@@ -518,7 +523,6 @@ class EZMomi(object):
                 sys.stdout.write("=")
             sys.stdout.write (str(data[rowNr-1][index]))
             print
-
 
     def listSnapshots(self):
         root_snapshot_list = self.get_all_snapshots(self.config['vm'])
