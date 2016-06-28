@@ -449,6 +449,19 @@ class EZMomi(object):
         result = self.WaitForTasks(tasks)
         print "Created snapshot for %s" % vm.name
 
+    def get_snapshots_recursive(self, snap_tree):
+        local_snap = []
+        for snap in snap_tree:
+            local_snap.append(snap)
+            # print "local_snap1=", local_snap
+        for snap in snap_tree:
+            recurse_snap = self.get_snapshots_recursive(snap.childSnapshotList)
+            if recurse_snap:
+                local_snap.extend(recurse_snap)
+            # print "local_snap2=", local_snap
+        # print "local_snap3=", local_snap
+        return local_snap
+
     def get_all_snapshots(self, vm_name):
         vm = self.get_vm_failfast(vm_name)
 
@@ -457,7 +470,7 @@ class EZMomi(object):
         except IndexError:
             return
 
-        return vm_snapshot_info.rootSnapshotList
+        return self.get_snapshots_recursive(vm_snapshot_info.rootSnapshotList)
 
     def get_snapshot_by_name(self, vm, name):
         return next(snapshot.snapshot for snapshot in
