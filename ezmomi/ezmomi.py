@@ -488,7 +488,8 @@ class EZMomi(object):
         except IndexError:
             return
 
-        return self.get_snapshots_recursive(vm_snapshot_info.rootSnapshotList)
+        return None if vm_snapshot_info is None \
+            else self.get_snapshots_recursive(vm_snapshot_info.rootSnapshotList)
 
     def get_snapshot_by_name(self, vm, name):
         return next(snapshot.snapshot for snapshot in

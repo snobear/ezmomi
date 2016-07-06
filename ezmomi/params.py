@@ -17,15 +17,17 @@ def arg_setup():
         version="ezmomi version %s" % __version__
     )
 
+    main_parser.add_argument(
+        "--debug",
+        action="store_true",
+        default=False,
+        help="Print debug messages"
+    )
+
     # specify any arguments that are common to all subcommands
     common_parser = argparse.ArgumentParser(
         add_help=False,
         description="Shared/common arguments for all subcommands"
-    )
-    common_parser.add_argument(
-        "--debug",
-        action='store_true',
-        help="Print debug messages"
     )
 
     # list
@@ -242,7 +244,7 @@ def arg_setup():
     status_parser.add_argument(
         "--extra",
         required=False,
-        action='store_true',
+        action="store_true",
         default=False,
         help="Extra VM status (vm name, power status, ip address, hostname, "
              "memory, cpu num, uuid, guest id, uptime)"
@@ -250,7 +252,7 @@ def arg_setup():
     status_parser.add_argument(
         "--parserFriendly",
         required=False,
-        action='store_true',
+        action="store_true",
         default=False,
         help="Friendly output for easy parsing"
     )
