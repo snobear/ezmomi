@@ -72,8 +72,8 @@ class EZMomi(object):
         except IOError:
             print "Unable to open config file. The default ezmomi config " \
                   "filepath is ~/.config/ezmomi/config.yml. You can also " \
-                  "specify the config file path by setting the EZMOMI_CONFIG " \
-                  "environment variable."
+                  "specify the config file path by setting the " \
+                  "EZMOMI_CONFIG environment variable."
             sys.exit(1)
         except Exception:
             print 'Unable to read config file.  YAML syntax issue, perhaps?'
@@ -448,7 +448,8 @@ class EZMomi(object):
                           str(timeout_minutes)
                       )
                 vm.ShutdownGuest()
-                if self.WaitForVirtualMachineShutdown(vm, timeout_minutes * 60):
+                if self.WaitForVirtualMachineShutdown(vm,
+                                                      timeout_minutes * 60):
                     print "shutdown complete"
                     print "%s poweredOff" % vm.name
                 else:
