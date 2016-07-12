@@ -207,6 +207,7 @@ def arg_setup():
     clone_parser.add_argument(
         "--post-clone-cmd",
         type=str,
+        default='',
         help="Command to run after clone. This is run from the same shell "
              "that ezmomi is called from. Useful in running extra "
              "provisioning steps."
