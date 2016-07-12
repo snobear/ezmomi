@@ -62,18 +62,18 @@ class EZMomi(object):
                        % (ezmomi_ex_config, default_cfg_dir))
                 sys.exit(1)
 
-            print "Could not find a config.yml file, so I copied an example "\
-                  "to your home directory at %s/config.yml.example.  Please "\
-                  "rename this to config.yml and add your vSphere "          \
+            print "Could not find a config.yml file, so I copied an example " \
+                  "to your home directory at %s/config.yml.example.  Please " \
+                  "rename this to config.yml and add your vSphere " \
                   "environment's settings." % default_cfg_dir
             sys.exit(0)
         try:
             config = yaml.load(file(config_file))
         except IOError:
-            print "Unable to open config file. The default ezmomi config "\
-                  "filepath is ~/.config/ezmomi/config.yml. You can also "\
-                  "specify the config file path by setting the EZMOMI_CONFIG "\
-                  "environment variable."
+            print "Unable to open config file. The default ezmomi config " \
+                  "filepath is ~/.config/ezmomi/config.yml. You can also " \
+                  "specify the config file path by setting the " \
+                  "EZMOMI_CONFIG environment variable."
             sys.exit(1)
         except Exception:
             print 'Unable to read config file.  YAML syntax issue, perhaps?'
@@ -100,14 +100,14 @@ class EZMomi(object):
         try:
             context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
             self.si = SmartConnect(
-                        host=self.config['server'],
-                        user=self.config['username'],
-                        pwd=self.config['password'],
-                        port=int(self.config['port']),
-                        sslContext=context,
-                        certFile=None,
-                        keyFile=None,
-                        )
+                host=self.config['server'],
+                user=self.config['username'],
+                pwd=self.config['password'],
+                port=int(self.config['port']),
+                sslContext=context,
+                certFile=None,
+                keyFile=None,
+            )
         except Exception as e:
             print 'Unable to connect to vsphere server.'
             print e
@@ -238,14 +238,14 @@ class EZMomi(object):
                 ip_settings[0]['datastore'])
             if datastore is None:
                 print "Error: Unable to find Datastore '%s'" \
-                    % ip_settings[0]['datastore']
+                      % ip_settings[0]['datastore']
                 sys.exit(1)
 
         template_vm = self.get_vm_failfast(
             self.config['template'],
             False,
             'Template VM'
-            )
+        )
 
         # Relocation spec
         relospec = vim.vm.RelocateSpec()
@@ -371,7 +371,7 @@ class EZMomi(object):
                 # helper env variables
                 os.environ['EZMOMI_CLONE_HOSTNAME'] = self.config['hostname']
                 print "Running --post-clone-cmd %s" % \
-                    self.config['post_clone_cmd']
+                      self.config['post_clone_cmd']
                 os.system(self.config['post_clone_cmd'])
 
             except Exception as e:
@@ -446,9 +446,10 @@ class EZMomi(object):
                       "(%s minutes before forced powerOff)" % (
                           vm.name,
                           str(timeout_minutes)
-                          )
+                      )
                 vm.ShutdownGuest()
-                if self.WaitForVirtualMachineShutdown(vm, timeout_minutes*60):
+                if self.WaitForVirtualMachineShutdown(vm,
+                                                      timeout_minutes * 60):
                     print "shutdown complete"
                     print "%s poweredOff" % vm.name
                 else:
@@ -488,7 +489,10 @@ class EZMomi(object):
         except IndexError:
             return
 
-        return self.get_snapshots_recursive(vm_snapshot_info.rootSnapshotList)
+        return None if vm_snapshot_info is None \
+            else self.get_snapshots_recursive(
+                vm_snapshot_info.rootSnapshotList
+                )
 
     def get_snapshot_by_name(self, vm, name):
         return next(snapshot.snapshot for snapshot in
@@ -524,14 +528,14 @@ class EZMomi(object):
 
         # all rows will have same size
         for row in data:
-            row.extend((maxlen-len(row)) * [''])
+            row.extend((maxlen - len(row)) * [''])
 
         rowNr = len(data)
         for index in range(0, maxlen):
-            for row in range(0, rowNr-1):
+            for row in range(0, rowNr - 1):
                 sys.stdout.write(str(data[row][index]))
                 sys.stdout.write("=")
-            sys.stdout.write(str(data[rowNr-1][index]))
+            sys.stdout.write(str(data[rowNr - 1][index]))
             print
 
     def listSnapshots(self):
@@ -573,7 +577,7 @@ class EZMomi(object):
         tasks.append(
             snapshot.Revert(host=host_system,
                             suppressPowerOn=self.config['suppress_power_on'])
-            )
+        )
         result = self.WaitForTasks(tasks)
         print("Reverted snapshot %s for virtual machine %s" %
               (self.config['name'], self.config['vm']))
@@ -603,6 +607,7 @@ class EZMomi(object):
     '''
      Helper methods
     '''
+
     def send_email(self):
         import smtplib
         from email.mime.text import MIMEText
@@ -646,7 +651,7 @@ class EZMomi(object):
             [vim.ResourcePool],
             pool_name,
             return_all=True
-            )
+        )
 
         # get the first pool that exists in a given cluster
         if pool_selections:
@@ -685,7 +690,7 @@ class EZMomi(object):
             name,
             verbose=False,
             host_system_term='HS'
-            ):
+    ):
         """
         Get a HostSystem object
         fail fast if the object isn't a valid reference
@@ -784,7 +789,7 @@ class EZMomi(object):
             vm_to_poll,
             timeout_seconds,
             sleep_period=5
-            ):
+    ):
         """
         Guest shutdown requests do not run a task we can wait for.
         So, we must poll and wait for status to be poweredOff.
