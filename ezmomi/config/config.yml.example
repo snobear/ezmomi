@@ -37,6 +37,13 @@ networks:
     network:    'Internal 2'
     gateway:    '192.168.24.50'
 
+  '192.168.24.60/24':
+    datacenter:                  'Foocenter'
+    cluster:                     'FooCluster'
+    datastore:                   'Foomount'
+    distributedvirtualportgroup: 'DVInternal'
+    gateway:                     '192.168.24.61'
+
   # storage network
   # Note: any networks that not used for primary IPs only need to have the network name defined, like this example.
   '172.20.200.1/24':

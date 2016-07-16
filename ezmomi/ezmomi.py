@@ -290,15 +290,27 @@ class EZMomi(object):
             nic.device.key = 4000
             nic.device.deviceInfo = vim.Description()
             nic.device.deviceInfo.label = 'Network Adapter %s' % (key + 1)
-            nic.device.deviceInfo.summary = ip_settings[key]['network']
-            nic.device.backing = (
-                vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
-            )
-            nic.device.backing.network = (
-                self.get_obj([vim.Network], ip_settings[key]['network'])
-            )
-            nic.device.backing.deviceName = ip_settings[key]['network']
-            nic.device.backing.useAutoDetect = False
+
+            if 'distributedvirtualportgroup' in ip_settings[key]:
+                dvpg = ip_settings[key]['distributedvirtualportgroup']
+                nic.device.deviceInfo.summary = dvpg
+                pg_obj = self.get_obj([vim.dvs.DistributedVirtualPortgroup], dvpg)  # noqa
+                dvs_port_connection = vim.dvs.PortConnection()
+                dvs_port_connection.portgroupKey = pg_obj.key
+                dvs_port_connection.switchUuid = pg_obj.config.distributedVirtualSwitch.uuid  # noqa
+                nic.device.backing = vim.vm.device.VirtualEthernetCard.DistributedVirtualPortBackingInfo()  # noqa
+                nic.device.backing.port = dvs_port_connection
+            else:
+                # use traditional network-setup without distributed switches
+                nic.device.deviceInfo.summary = ip_settings[key]['network']
+                nic.device.backing = (
+                    vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
+                )
+                nic.device.backing.network = (
+                    self.get_obj([vim.Network], ip_settings[key]['network'])
+                )
+                nic.device.backing.deviceName = ip_settings[key]['network']
+                nic.device.backing.useAutoDetect = False
             nic.device.connectable = vim.vm.device.VirtualDevice.ConnectInfo()
             nic.device.connectable.startConnected = True
             nic.device.connectable.allowGuestControl = True
