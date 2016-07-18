@@ -194,6 +194,15 @@ def arg_setup():
         help="Memory in GB"
     )
     clone_parser.add_argument(
+        "--disks",
+        required=False,
+        default="",
+        type=str,
+        help="Additional disks in GB, e.g. 16,thin 32; "
+             "adds two disks, 16GB (thin provisioned) and 32GB (default)",
+        nargs="+",
+    )
+    clone_parser.add_argument(
         "--domain",
         type=str,
         help="Domain, e.g. example.com"
