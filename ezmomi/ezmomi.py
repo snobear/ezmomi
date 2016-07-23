@@ -19,6 +19,7 @@ class EZMomi(object):
         self.debug = self.config['debug']
         self.connect()
         self._column_spacing = 4
+        self.datacenter = None
 
     def print_debug(self, title, obj):
         try:
@@ -118,6 +119,11 @@ class EZMomi(object):
 
         self.content = self.si.RetrieveContent()
 
+    def get_root(self):
+        if self.datacenter:
+            return self.datacenter
+        return self.content.rootFolder
+
     def list_objects(self):
         """
         Command Section: list
@@ -189,25 +195,26 @@ class EZMomi(object):
                       "settings for this network in config.yml." % ip_string
                 sys.exit(1)
 
-        # network to place new VM in
-        self.get_obj([vim.Network], ip_settings[0]['network'])
-        datacenter = self.get_obj([vim.Datacenter],
-                                  ip_settings[0]['datacenter']
-                                  )
+        # datacenter to place new VM in, determined by primary IP
+        self.datacenter = self.get_obj([vim.Datacenter],
+                                       ip_settings[0]['datacenter'])
 
         # get the folder where VMs are kept for this datacenter
-        destfolder = datacenter.vmFolder
+        destfolder = self.datacenter.vmFolder
 
         cluster = self.get_obj([vim.ClusterComputeResource],
                                ip_settings[0]['cluster']
                                )
+        self.get_obj([vim.Network],
+                     (ip_settings[0].get('distributedvirtualportgroup', None) or
+                      ip_settings[0].get('network', None)))
 
         resource_pool_str = self.config['resource_pool']
         # resource_pool setting in config file takes priority over the
         # default 'Resources' pool
         if resource_pool_str == 'Resources' \
-                and ('resource_pool' in ip_settings[key]):
-            resource_pool_str = ip_settings[key]['resource_pool']
+                and ('resource_pool' in ip_settings[0]):
+            resource_pool_str = ip_settings[0]['resource_pool']
 
         resource_pool = self.get_resource_pool(cluster, resource_pool_str)
 
@@ -678,7 +685,7 @@ class EZMomi(object):
         """Get the vsphere object associated with a given text name or MOID"""
         obj = list()
         container = self.content.viewManager.CreateContainerView(
-            self.content.rootFolder, vimtype, True)
+            self.get_root(), vimtype, True)
 
         for c in container.view:
             if name in [c.name, c._GetMoId()]:
