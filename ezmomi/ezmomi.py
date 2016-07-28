@@ -604,6 +604,21 @@ class EZMomi(object):
             result = self.WaitForTasks(tasks)
             print "%s poweredOn" % vm.name
 
+    def syncTimeWithHost(self):
+        vm = self.get_vm_failfast(self.config['name'])
+        flag = self.config['value']
+
+        if vm.config.tools.syncTimeWithHost == flag:
+            print "%s syncTimeWithHost already %s" % (vm.name, str(flag))
+        else:
+            spec = vim.vm.ConfigSpec()
+            spec.tools = vim.vm.ToolsConfigInfo()
+            spec.tools.syncTimeWithHost = flag
+
+            task = vm.ReconfigVM_Task(spec)
+            result = self.WaitForTasks([task])
+            print "%s syncTimeWithHost %s" % (vm.name, str(flag))
+
     '''
      Helper methods
     '''
