@@ -356,6 +356,8 @@ class EZMomi(object):
         clonespec.powerOn = True
         clonespec.template = False
 
+        self.addDisks(template_vm, clonespec)
+
         if self.debug:
             self.print_debug("CloneSpec", clonespec)
 
@@ -381,6 +383,54 @@ class EZMomi(object):
         # send notification email
         if self.config['mail']:
             self.send_email()
+
+    def addDisks(self, vm, spec):
+        # get all disks on the VM, set unit_number to the last taken
+        unit_number = 0
+        controller = None
+        # XXX more than one SCSI controller?
+        for dev in vm.config.hardware.device:
+            if hasattr(dev.backing, 'fileName'):
+                unit_number = max(unit_number, int(dev.unitNumber))
+            if isinstance(dev, vim.vm.device.VirtualSCSIController):
+                controller = dev
+
+        dev_changes = []
+        for key, disk_spec in enumerate(self.config['disks']):
+            disk_size_str, disk_type = disk_spec.partition(",")[::2]
+            new_disk_kb = int(disk_size_str) * 1024 * 1024
+            if new_disk_kb <= 0:
+                # ignore
+                continue
+
+            unit_number += 1
+            # unit_number 7 reserved for scsi controller
+            if unit_number == 7:
+                unit_number += 1
+            if unit_number >= 16:
+                raise "too many disks"
+
+            if self.debug:
+                self.print_debug("disk size %s[GB]" % key, disk_size_str)
+                self.print_debug("disk unit_number %d" % key, unit_number)
+                self.print_debug("controller %d" % key, controller)
+
+            # add disk here
+            disk_spec = vim.vm.device.VirtualDeviceSpec()
+            disk_spec.fileOperation = "create"
+            disk_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
+            disk_spec.device = vim.vm.device.VirtualDisk()
+            disk_spec.device.backing = \
+                vim.vm.device.VirtualDisk.FlatVer2BackingInfo()
+            # XXX
+            if disk_type == 'thin':
+                disk_spec.device.backing.thinProvisioned = True
+            disk_spec.device.backing.diskMode = 'persistent'
+            disk_spec.device.unitNumber = unit_number
+            disk_spec.device.capacityInKB = new_disk_kb
+            disk_spec.device.controllerKey = controller.key
+            dev_changes.append(disk_spec)
+        spec.config.deviceChange += dev_changes
 
     def destroy(self):
         tasks = list()
