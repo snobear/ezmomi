@@ -34,3 +34,5 @@ def cli():
         ez.powerOff()
     elif kwargs['mode'] == 'powerOn':
         ez.powerOn()
+    elif kwargs['mode'] == 'syncTimeWithHost':
+        ez.syncTimeWithHost()
