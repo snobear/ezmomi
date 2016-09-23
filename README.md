@@ -113,7 +113,7 @@ etc...
 ### Install via github
 
 ```
-git clone git@github.com:imsweb/ezmomi.git
+git clone https://github.com/imsweb/ezmomi.git
 # using python2.7 virtualenv
 virtualenv --no-site-packages ezmomi
 cd ezmomi && source bin/activate
