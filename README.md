@@ -91,6 +91,12 @@ ezmomi list --type Datastore
 etc...
 ```
 
+##### Sync a VM's time with ESXi host
+
+```
+ezmomi syncTimeWithHost --name somevm01
+```
+
 See [Managed Object Types](http://pubs.vmware.com/vsphere-60/topic/com.vmware.wssdk.apiref.doc/mo-types-landing.html) in the vSphere API docs for a list of types to look up.
 
 ### Help
