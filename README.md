@@ -115,7 +115,7 @@ etc...
 ```
 git clone https://github.com/imsweb/ezmomi.git
 # using python2.7 virtualenv
-virtualenv --no-site-packages ezmomi
+virtualenv -p python2.7 --no-site-packages ezmomi
 cd ezmomi && source bin/activate
 pip install -r requirements.txt
 export PYTHONPATH=$PWD:$PYTHONPATH
