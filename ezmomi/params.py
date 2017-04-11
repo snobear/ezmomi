@@ -1,15 +1,6 @@
 """Command line option definitions"""
 
 
-def add_boolean_argument(parser, name, default=False):
-    """Add a boolean argument to an ArgumentParser instance."""
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--set',  action='store_true', dest=name,
-                       default=default)
-    group.add_argument('--unset', action='store_false', dest=name,
-                       default=default)
-
-
 def arg_setup():
     from .version import __version__
     import argparse
@@ -26,17 +17,15 @@ def arg_setup():
         version="ezmomi version %s" % __version__
     )
 
-    main_parser.add_argument(
-        "--debug",
-        action="store_true",
-        default=False,
-        help="Print debug messages"
-    )
-
     # specify any arguments that are common to all subcommands
     common_parser = argparse.ArgumentParser(
         add_help=False,
         description="Shared/common arguments for all subcommands"
+    )
+    common_parser.add_argument(
+        "--debug",
+        action='store_true',
+        help="Print debug messages"
     )
 
     # list
@@ -203,15 +192,6 @@ def arg_setup():
         help="Memory in GB"
     )
     clone_parser.add_argument(
-        "--disks",
-        required=False,
-        default="",
-        type=str,
-        help="Additional disks in GB, e.g. 16,thin 32; "
-             "adds two disks, 16GB (thin provisioned) and 32GB (default)",
-        nargs="+",
-    )
-    clone_parser.add_argument(
         "--domain",
         type=str,
         help="Domain, e.g. example.com"
@@ -222,14 +202,13 @@ def arg_setup():
         default="Resources",
         help="Resource Pool, e.g. 'Linux Servers'"
     )
-    clone_parser.add_argument(
-        "--post-clone-cmd",
-        type=str,
-        default='',
-        help="Command to run after clone. This is run from the same shell "
-             "that ezmomi is called from. Useful in running extra "
-             "provisioning steps."
-    )
+    # clone_parser.add_argument(
+    #     "--post-clone-cmd",
+    #     type=str,
+    #     help="Command to run after clone. This is run from the same shell "
+    #          "that ezmomi is called from. Useful in running extra "
+    #          "provisioning steps."
+    # )
 
     # destroy
     destroy_parser = subparsers.add_parser(
@@ -248,6 +227,11 @@ def arg_setup():
         default=False,
         action="store_true"
     )
+    destroy_parser.add_argument(
+        "--type",
+        required=True,
+        help="obj type,datacenter、cluster or vm"
+    )
 
     # status
     status_parser = subparsers.add_parser(
@@ -263,7 +247,7 @@ def arg_setup():
     status_parser.add_argument(
         "--extra",
         required=False,
-        action="store_true",
+        action='store_true',
         default=False,
         help="Extra VM status (vm name, power status, ip address, hostname, "
              "memory, cpu num, uuid, guest id, uptime)"
@@ -271,7 +255,7 @@ def arg_setup():
     status_parser.add_argument(
         "--parserFriendly",
         required=False,
-        action="store_true",
+        action='store_true',
         default=False,
         help="Friendly output for easy parsing"
     )
@@ -313,16 +297,113 @@ def arg_setup():
         help="VM name (case-sensitive)"
     )
 
-    # syncTimeWithHost
-    syncTimeWithHost_parser = subparsers.add_parser(
-        "syncTimeWithHost",
+    # reconfig
+    reconfig_parser = subparsers.add_parser(
+        "reconfig",
         parents=[common_parser],
-        help="Virtual Machine syncs time with host"
+        help="Reconfig a Virtual Machine's cpus,memory"
     )
-    syncTimeWithHost_parser.add_argument(
+    reconfig_parser.add_argument(
         "--name",
         required=True,
         help="VM name (case-sensitive)"
     )
-    add_boolean_argument(syncTimeWithHost_parser, "value", default=True)
+    reconfig_parser.add_argument(
+        "--cpus",
+        type=int,
+        required=True,
+        help="Number of CPUs"
+    )
+    reconfig_parser.add_argument(
+        "--mem",
+        type=float,
+        required=True,
+        help="Memory in GB"
+    )
+
+    # createDatacenter
+    createDatacenter_parser = subparsers.add_parser(
+        "createDatacenter",
+        parents=[common_parser],
+        help="Create a datacenter"
+    )
+    createDatacenter_parser.add_argument(
+        "--name",
+        required=True,
+        help="datacenter name (case-sensitive)"
+    )
+
+    # createCluster
+    createCluster_parser = subparsers.add_parser(
+        "createCluster",
+        parents=[common_parser],
+        help="Create a Cluster"
+    )
+    createCluster_parser.add_argument(
+        "--name",
+        required=True,
+        help="cluster name (case-sensitive)"
+    )
+    createCluster_parser.add_argument(
+        "--datacenter",
+        required=True,
+        help="datacenter name (case-sensitive)"
+    )
+
+    # addHost
+    addHost_parser = subparsers.add_parser(
+        "addHost",
+        parents=[common_parser],
+        help="Add a Host"
+    )
+    addHost_parser.add_argument(
+        "--hostIp",
+        required=True,
+        help="ip for connect and management host "
+    )
+    addHost_parser.add_argument(
+        "--account",
+        required=True,
+        help="The administration account on the host"
+    )
+    addHost_parser.add_argument(
+        "--accountPass",
+        required=True,
+        help="The password for the administration account"
+    )
+    addHost_parser.add_argument(
+        "--cluster",
+        required=True,
+        help="cluster name"
+    )
+
+    # queryPerf
+    queryPerf_parser = subparsers.add_parser(
+        "queryPerf",
+        parents=[common_parser],
+        help="query performance"
+    )
+    queryPerf_parser.add_argument(
+        "--cluster",
+        required=True,
+        help="cluster name "
+    )
+
+    # queryHostPerf
+    queryHostPerf_parser = subparsers.add_parser(
+        "queryHostPerf",
+        parents=[common_parser],
+        help="query performance"
+    )
+    queryHostPerf_parser.add_argument(
+        "--hostname",
+        required=True,
+        help="host name "
+    )
+    queryHostPerf_parser.add_argument(
+        "--datastoreName",
+        required=True,
+        help="datastore name "
+    )
+
     return main_parser.parse_args()

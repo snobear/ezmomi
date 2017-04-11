@@ -34,5 +34,15 @@ def cli():
         ez.powerOff()
     elif kwargs['mode'] == 'powerOn':
         ez.powerOn()
-    elif kwargs['mode'] == 'syncTimeWithHost':
-        ez.syncTimeWithHost()
+    elif kwargs['mode'] == 'reconfig':
+        ez.reconfig()
+    elif kwargs['mode'] == 'createDatacenter':
+        ez.createDatacenter()
+    elif kwargs['mode'] == 'createCluster':
+        ez.createCluster()
+    elif kwargs['mode'] == 'addHost':
+        ez.addHost()
+    elif kwargs['mode'] == 'queryPerf':
+        ez.queryPerf()
+    elif kwargs['mode'] == 'queryHostPerf':
+        ez.queryHostPerf()
