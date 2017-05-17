@@ -33,7 +33,7 @@ def arg_setup():
         help="Print debug messages"
     )
 
-      # specify any arguments that are common to all subcommands
+    # specify any arguments that are common to all subcommands
     common_parser = argparse.ArgumentParser(
         add_help=False,
         description="Shared/common arguments for all subcommands"
