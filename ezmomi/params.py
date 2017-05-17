@@ -33,10 +33,17 @@ def arg_setup():
         help="Print debug messages"
     )
 
-    # specify any arguments that are common to all subcommands
+      # specify any arguments that are common to all subcommands
     common_parser = argparse.ArgumentParser(
         add_help=False,
         description="Shared/common arguments for all subcommands"
+    )
+
+    common_parser.add_argument(
+        "--no_ssl_verify",
+        action="store_true",
+        default=False,
+        help="Set this flag to disable ssl verification"
     )
 
     # list
