@@ -92,7 +92,10 @@ etc...
 ```
 
 ##### Disable ssl warnings
-ezmomi [command] --no-ssl-verify [options]
+
+```
+ezmomi --no-ssl-verify [command] [options]
+```
 
 ##### Sync a VM's time with ESXi host
 
