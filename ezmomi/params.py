@@ -40,7 +40,7 @@ def arg_setup():
     )
 
     common_parser.add_argument(
-        "--no_ssl_verify",
+        "--no-ssl-verify",
         action="store_true",
         default=False,
         help="Set this flag to disable ssl verification"
