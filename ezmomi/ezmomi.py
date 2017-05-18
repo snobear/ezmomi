@@ -10,6 +10,7 @@ import time
 from netaddr import IPNetwork, IPAddress
 import yaml
 import ssl
+import requests
 
 
 class EZMomi(object):
@@ -99,6 +100,9 @@ class EZMomi(object):
         """Connect to vCenter server"""
         try:
             context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+            if self.config['no_ssl_verify']:
+                requests.packages.urllib3.disable_warnings()
+                context.verify_mode = ssl.CERT_NONE
             self.si = SmartConnect(
                 host=self.config['server'],
                 user=self.config['username'],

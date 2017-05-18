@@ -39,6 +39,13 @@ def arg_setup():
         description="Shared/common arguments for all subcommands"
     )
 
+    common_parser.add_argument(
+        "--no-ssl-verify",
+        action="store_true",
+        default=False,
+        help="Set this flag to disable ssl verification"
+    )
+
     # list
     list_parser = subparsers.add_parser(
         "list",

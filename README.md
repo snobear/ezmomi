@@ -91,6 +91,9 @@ ezmomi list --type Datastore
 etc...
 ```
 
+##### Disable ssl warnings
+ezmomi [command] --no-ssl-verify [options]
+
 ##### Sync a VM's time with ESXi host
 
 ```
