@@ -20,6 +20,7 @@ class EZMomi(object):
         self.debug = self.config['debug']
         self.connect()
         self._column_spacing = 4
+        self.datacenter = None
 
     def print_debug(self, title, obj):
         try:
@@ -122,6 +123,11 @@ class EZMomi(object):
 
         self.content = self.si.RetrieveContent()
 
+    def get_root(self):
+        if self.datacenter:
+            return self.datacenter
+        return self.content.rootFolder
+
     def list_objects(self):
         """
         Command Section: list
@@ -193,25 +199,26 @@ class EZMomi(object):
                       "settings for this network in config.yml." % ip_string
                 sys.exit(1)
 
-        # network to place new VM in
-        self.get_obj([vim.Network], ip_settings[0]['network'])
-        datacenter = self.get_obj([vim.Datacenter],
-                                  ip_settings[0]['datacenter']
-                                  )
+        # datacenter to place new VM in, determined by primary IP
+        self.datacenter = self.get_obj([vim.Datacenter],
+                                       ip_settings[0]['datacenter'])
 
         # get the folder where VMs are kept for this datacenter
-        destfolder = datacenter.vmFolder
+        destfolder = self.datacenter.vmFolder
 
         cluster = self.get_obj([vim.ClusterComputeResource],
                                ip_settings[0]['cluster']
                                )
+        self.get_obj([vim.Network],
+                     (ip_settings[0].get('distributedvirtualportgroup', None) or
+                      ip_settings[0].get('network', None)))
 
         resource_pool_str = self.config['resource_pool']
         # resource_pool setting in config file takes priority over the
         # default 'Resources' pool
         if resource_pool_str == 'Resources' \
-                and ('resource_pool' in ip_settings[key]):
-            resource_pool_str = ip_settings[key]['resource_pool']
+                and ('resource_pool' in ip_settings[0]):
+            resource_pool_str = ip_settings[0]['resource_pool']
 
         resource_pool = self.get_resource_pool(cluster, resource_pool_str)
 
@@ -294,15 +301,27 @@ class EZMomi(object):
             nic.device.key = 4000
             nic.device.deviceInfo = vim.Description()
             nic.device.deviceInfo.label = 'Network Adapter %s' % (key + 1)
-            nic.device.deviceInfo.summary = ip_settings[key]['network']
-            nic.device.backing = (
-                vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
-            )
-            nic.device.backing.network = (
-                self.get_obj([vim.Network], ip_settings[key]['network'])
-            )
-            nic.device.backing.deviceName = ip_settings[key]['network']
-            nic.device.backing.useAutoDetect = False
+
+            if 'distributedvirtualportgroup' in ip_settings[key]:
+                dvpg = ip_settings[key]['distributedvirtualportgroup']
+                nic.device.deviceInfo.summary = dvpg
+                pg_obj = self.get_obj([vim.dvs.DistributedVirtualPortgroup], dvpg)  # noqa
+                dvs_port_connection = vim.dvs.PortConnection()
+                dvs_port_connection.portgroupKey = pg_obj.key
+                dvs_port_connection.switchUuid = pg_obj.config.distributedVirtualSwitch.uuid  # noqa
+                nic.device.backing = vim.vm.device.VirtualEthernetCard.DistributedVirtualPortBackingInfo()  # noqa
+                nic.device.backing.port = dvs_port_connection
+            else:
+                # use traditional network-setup without distributed switches
+                nic.device.deviceInfo.summary = ip_settings[key]['network']
+                nic.device.backing = (
+                    vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
+                )
+                nic.device.backing.network = (
+                    self.get_obj([vim.Network], ip_settings[key]['network'])
+                )
+                nic.device.backing.deviceName = ip_settings[key]['network']
+                nic.device.backing.useAutoDetect = False
             nic.device.connectable = vim.vm.device.VirtualDevice.ConnectInfo()
             nic.device.connectable.startConnected = True
             nic.device.connectable.allowGuestControl = True
@@ -735,7 +754,7 @@ class EZMomi(object):
         """Get the vsphere object associated with a given text name or MOID"""
         obj = list()
         container = self.content.viewManager.CreateContainerView(
-            self.content.rootFolder, vimtype, True)
+            self.get_root(), vimtype, True)
 
         for c in container.view:
             if name in [c.name, c._GetMoId()]:
