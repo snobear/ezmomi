@@ -16,6 +16,8 @@ password: "mypass#123"
 # New VM defaults
 cpus: 1
 mem: 3
+
+default_templates_path: "Specific_folder_for_the_template_This_is_option_like_/DC/folder1/folder2"   #Optional
 template: centos65
 domain: example
 
@@ -29,6 +31,8 @@ networks:
     datastore:  'Mystore 1'
     network:    'My Internal Net'
     gateway:    '172.10.16.1'
+    customspecname: 'Customization_specification_name_if_none_this_field is optional'
+    distributedvirtualportgroup: 'This_field_is_also_optional'
 
   '192.168.24.50/24':
     datacenter: 'Foocenter'
