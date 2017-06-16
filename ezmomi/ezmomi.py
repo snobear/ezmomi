@@ -198,14 +198,14 @@ class EZMomi(object):
         self.get_obj([vim.Network], ip_settings[0]['network'])
         datacenter = self.get_obj([vim.Datacenter],
                                   ip_settings[0]['datacenter']
-                                 )
+                                  )
 
         # get the folder where VMs are kept for this datacenter
         destfolder = datacenter.vmFolder
 
         cluster = self.get_obj([vim.ClusterComputeResource],
                                ip_settings[0]['cluster']
-                              )
+                               )
 
         resource_pool_str = self.config['resource_pool']
         # resource_pool setting in config file takes priority over the
@@ -220,7 +220,7 @@ class EZMomi(object):
         if host_system != "":
             host_system = self.get_obj([vim.HostSystem],
                                        self.config['host']
-                                      )
+                                       )
 
         if self.debug:
             self.print_debug(
@@ -247,7 +247,6 @@ class EZMomi(object):
                 sys.exit(1)
 
         if template_path:
-            print("Template_path " + template_path)
             template_vm = self.get_vm_failfast(
                 self.config['template'],
                 False,
@@ -255,7 +254,7 @@ class EZMomi(object):
                 path=template_path
             )
         else:
-             template_vm = self.get_vm_failfast(
+            template_vm = self.get_vm_failfast(
                 self.config['template'],
                 False,
                 'Template VM'
@@ -310,8 +309,15 @@ class EZMomi(object):
                 pg_obj = self.get_obj([vim.dvs.DistributedVirtualPortgroup], dvpg)  # noqa
                 dvs_port_connection = vim.dvs.PortConnection()
                 dvs_port_connection.portgroupKey = pg_obj.key
-                dvs_port_connection.switchUuid = pg_obj.config.distributedVirtualSwitch.uuid
-                nic.device.backing = vim.vm.device.VirtualEthernetCard.DistributedVirtualPortBackingInfo()
+                dvs_port_connection.switchUuid = (
+                    pg_obj.config.distributedVirtualSwitch.uuid
+                )
+                # did it to get pep8
+                e_nic = vim.vm.device.VirtualEthernetCard
+                nic.device.backing = (
+                    e_nic.DistributedVirtualPortBackingInfo()
+                )
+
                 nic.device.backing.port = dvs_port_connection
             else:
                 nic.device.deviceInfo.summary = ip_settings[key]['network']
@@ -330,7 +336,10 @@ class EZMomi(object):
             devices.append(nic)
 
             if 'customspecname' in ip_settings[key]:
-                customspec = self.get_customization_settings(ip_settings[key]['customspecname'])
+                custom_spec_name = ip_settings[key]['customspecname']
+                customspec = (
+                    self.get_customization_settings(custom_spec_name)
+                )
                 guest_map = customspec.nicSettingMap[0]
             else:
                 customspec = vim.vm.customization.Specification()
@@ -341,7 +350,9 @@ class EZMomi(object):
             guest_map.adapter.ip.ipAddress = str(ip_settings[key]['ip'])
 
             if 'subnet_mask' in ip_settings[key]:
-                guest_map.adapter.subnetMask = str(ip_settings[key]['subnet_mask'])
+                guest_map.adapter.subnetMask = (
+                    str(ip_settings[key]['subnet_mask'])
+                )
 
             if 'gateway' in ip_settings[key]:
                 guest_map.adapter.gateway = ip_settings[key]['gateway']
@@ -364,7 +375,6 @@ class EZMomi(object):
         ident.hostName = vim.vm.customization.FixedName()
         ident.hostName.name = self.config['hostname']
 
-        #customspec = vim.vm.customization.Specification()
         customspec.nicSettingMap = adaptermaps
         customspec.identity = ident
 
@@ -729,6 +739,7 @@ class EZMomi(object):
         s = smtplib.SMTP(mailserver)
         s.sendmail(mailfrom, [mailto], msg.as_string())
         s.quit()
+
     def get_customization_settings(self, customization_settings_name):
         '''
             Fetch the customization specific settings.
@@ -767,7 +778,9 @@ class EZMomi(object):
         obj = list()
         if path:
             obj_folder = self.content.searchIndex.FindByInventoryPath(path)
-            container = self.content.viewManager.CreateContainerView(obj_folder, vimtype, True)
+            container = self.content.viewManager.CreateContainerView(
+                obj_folder, vimtype, True
+            )
         else:
             container = self.content.viewManager.CreateContainerView(
                 self.content.rootFolder, vimtype, True)
@@ -828,7 +841,7 @@ class EZMomi(object):
         if verbose:
             print "Finding VirtualMachine named %s..." % name
         if path:
-            vm = self.get_vm(name,path=path)
+            vm = self.get_vm(name, path=path)
         else:
             vm = self.get_vm(name)
         if vm is None:
