@@ -162,6 +162,7 @@ class EZMomi(object):
         self.config['hostname'] = self.config['hostname'].lower()
         self.config['mem'] = int(self.config['mem'] * 1024)  # convert GB to MB
 
+        template_path = self.config['default_templates_path']
         print "Cloning %s to new host %s with %sMB RAM..." % (
             self.config['template'],
             self.config['hostname'],
@@ -245,11 +246,19 @@ class EZMomi(object):
                       % ip_settings[0]['datastore']
                 sys.exit(1)
 
-        template_vm = self.get_vm_failfast(
-            self.config['template'],
-            False,
-            'Template VM'
-        )
+        if template_path:
+            template_vm = self.get_vm_failfast(
+                self.config['template'],
+                False,
+                'Template VM',
+                path=template_path
+            )
+        else:
+            template_vm = self.get_vm_failfast(
+                self.config['template'],
+                False,
+                'Template VM'
+            )
 
         # Relocation spec
         relospec = vim.vm.RelocateSpec()
@@ -294,39 +303,80 @@ class EZMomi(object):
             nic.device.key = 4000
             nic.device.deviceInfo = vim.Description()
             nic.device.deviceInfo.label = 'Network Adapter %s' % (key + 1)
-            nic.device.deviceInfo.summary = ip_settings[key]['network']
-            nic.device.backing = (
-                vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
-            )
-            nic.device.backing.network = (
-                self.get_obj([vim.Network], ip_settings[key]['network'])
-            )
-            nic.device.backing.deviceName = ip_settings[key]['network']
-            nic.device.backing.useAutoDetect = False
+            if 'distributedvirtualportgroup' in ip_settings[key]:
+                dvpg = ip_settings[key]['distributedvirtualportgroup']
+                nic.device.deviceInfo.summary = dvpg
+                pg_obj = self.get_obj([vim.dvs.DistributedVirtualPortgroup], dvpg)  # noqa
+                dvs_port_connection = vim.dvs.PortConnection()
+                dvs_port_connection.portgroupKey = pg_obj.key
+                dvs_port_connection.switchUuid = (
+                    pg_obj.config.distributedVirtualSwitch.uuid
+                )
+                # did it to get pep8
+                e_nic = vim.vm.device.VirtualEthernetCard
+                nic.device.backing = (
+                    e_nic.DistributedVirtualPortBackingInfo()
+                )
+
+                nic.device.backing.port = dvs_port_connection
+            else:
+                nic.device.deviceInfo.summary = ip_settings[key]['network']
+                nic.device.backing = (
+                    vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
+                )
+                nic.device.backing.network = (
+                    self.get_obj([vim.Network], ip_settings[key]['network'])
+                )
+                nic.device.backing.deviceName = ip_settings[key]['network']
+                nic.device.backing.useAutoDetect = False
+
             nic.device.connectable = vim.vm.device.VirtualDevice.ConnectInfo()
             nic.device.connectable.startConnected = True
             nic.device.connectable.allowGuestControl = True
             devices.append(nic)
 
-            # guest NIC settings, i.e. 'adapter map'
-            guest_map = vim.vm.customization.AdapterMapping()
-            guest_map.adapter = vim.vm.customization.IPSettings()
+            if 'customspecname' in ip_settings[key]:
+                custom_spec_name = ip_settings[key]['customspecname']
+                customspec = (
+                    self.get_customization_settings(custom_spec_name)
+                )
+                guest_map = customspec.nicSettingMap[0]
+            else:
+                customspec = vim.vm.customization.Specification()
+                # guest NIC settings, i.e. 'adapter map'
+                guest_map = vim.vm.customization.AdapterMapping()
+                guest_map.adapter = vim.vm.customization.IPSettings()
             guest_map.adapter.ip = vim.vm.customization.FixedIp()
             guest_map.adapter.ip.ipAddress = str(ip_settings[key]['ip'])
-            guest_map.adapter.subnetMask = str(ip_settings[key]['subnet_mask'])
 
-            # these may not be set for certain IPs
-            try:
+            if 'subnet_mask' in ip_settings[key]:
+                guest_map.adapter.subnetMask = (
+                    str(ip_settings[key]['subnet_mask'])
+                )
+
+            if 'gateway' in ip_settings[key]:
                 guest_map.adapter.gateway = ip_settings[key]['gateway']
-            except:
-                pass
 
-            try:
+            if self.config['domain']:
                 guest_map.adapter.dnsDomain = self.config['domain']
-            except:
-                pass
 
             adaptermaps.append(guest_map)
+
+        # DNS settings
+        if 'dns_servers' in self.config:
+            globalip = vim.vm.customization.GlobalIPSettings()
+            globalip.dnsServerList = self.config['dns_servers']
+            globalip.dnsSuffixList = self.config['domain']
+            customspec.globalIPSettings = globalip
+
+        # Hostname settings
+        ident = vim.vm.customization.LinuxPrep()
+        ident.domain = self.config['domain']
+        ident.hostName = vim.vm.customization.FixedName()
+        ident.hostName.name = self.config['hostname']
+
+        customspec.nicSettingMap = adaptermaps
+        customspec.identity = ident
 
         # VM config spec
         vmconf = vim.vm.ConfigSpec()
@@ -335,22 +385,6 @@ class EZMomi(object):
         vmconf.cpuHotAddEnabled = True
         vmconf.memoryHotAddEnabled = True
         vmconf.deviceChange = devices
-
-        # DNS settings
-        globalip = vim.vm.customization.GlobalIPSettings()
-        globalip.dnsServerList = self.config['dns_servers']
-        globalip.dnsSuffixList = self.config['domain']
-
-        # Hostname settings
-        ident = vim.vm.customization.LinuxPrep()
-        ident.domain = self.config['domain']
-        ident.hostName = vim.vm.customization.FixedName()
-        ident.hostName.name = self.config['hostname']
-
-        customspec = vim.vm.customization.Specification()
-        customspec.nicSettingMap = adaptermaps
-        customspec.globalIPSettings = globalip
-        customspec.identity = ident
 
         # Clone spec
         clonespec = vim.vm.CloneSpec()
@@ -706,6 +740,14 @@ class EZMomi(object):
         s.sendmail(mailfrom, [mailto], msg.as_string())
         s.quit()
 
+    def get_customization_settings(self, customization_settings_name):
+        '''
+            Fetch the customization specific settings.
+        '''
+        return self.content.customizationSpecManager.GetCustomizationSpec(
+            customization_settings_name
+            ).spec
+
     def get_resource_pool(self, cluster, pool_name):
         """
         Find a resource pool given a pool name for desired cluster
@@ -731,11 +773,17 @@ class EZMomi(object):
 
         return pool_obj
 
-    def get_obj(self, vimtype, name, return_all=False):
+    def get_obj(self, vimtype, name, return_all=False, path=""):
         """Get the vsphere object associated with a given text name or MOID"""
         obj = list()
-        container = self.content.viewManager.CreateContainerView(
-            self.content.rootFolder, vimtype, True)
+        if path:
+            obj_folder = self.content.searchIndex.FindByInventoryPath(path)
+            container = self.content.viewManager.CreateContainerView(
+                obj_folder, vimtype, True
+            )
+        else:
+            container = self.content.viewManager.CreateContainerView(
+                self.content.rootFolder, vimtype, True)
 
         for c in container.view:
             if name in [c.name, c._GetMoId()]:
@@ -778,20 +826,24 @@ class EZMomi(object):
 
         return hs
 
-    def get_vm(self, name):
+    def get_vm(self, name, path=""):
         """Get a VirtualMachine object"""
-        return self.get_obj([vim.VirtualMachine], name)
+        if path:
+            return self.get_obj([vim.VirtualMachine], name, path=path)
+        else:
+            return self.get_obj([vim.VirtualMachine], name)
 
-    def get_vm_failfast(self, name, verbose=False, vm_term='VM'):
+    def get_vm_failfast(self, name, verbose=False, vm_term='VM', path=""):
         """
         Get a VirtualMachine object
         fail fast if the object isn't a valid reference
         """
         if verbose:
             print "Finding VirtualMachine named %s..." % name
-
-        vm = self.get_vm(name)
-
+        if path:
+            vm = self.get_vm(name, path=path)
+        else:
+            vm = self.get_vm(name)
         if vm is None:
             print "Error: %s '%s' does not exist" % (vm_term, name)
             sys.exit(1)
