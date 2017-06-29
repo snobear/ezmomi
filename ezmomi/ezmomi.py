@@ -201,7 +201,12 @@ class EZMomi(object):
                                   )
 
         # get the folder where VMs are kept for this datacenter
-        destfolder = datacenter.vmFolder
+        if self.config['destination_folder']:
+            destfolder = self.content.searchIndex.FindByInventoryPath(
+                self.config['destination_folder']
+            )
+        else:
+            destfolder = datacenter.vmFolder
 
         cluster = self.get_obj([vim.ClusterComputeResource],
                                ip_settings[0]['cluster']
@@ -237,14 +242,18 @@ class EZMomi(object):
             resource_pool = cluster.resourcePool
 
         datastore = None
-        if 'datastore' in ip_settings[0]:
+
+        if self.config['datastore']:
+            datastore = self.get_obj(
+                [vim.Datastore], self.config['datastore'])
+        elif 'datastore' in ip_settings[0]:
             datastore = self.get_obj(
                 [vim.Datastore],
                 ip_settings[0]['datastore'])
-            if datastore is None:
-                print "Error: Unable to find Datastore '%s'" \
-                      % ip_settings[0]['datastore']
-                sys.exit(1)
+        if datastore is None:
+            print "Error: Unable to find Datastore '%s'" \
+                    % ip_settings[0]['datastore']
+            sys.exit(1)
 
         if template_path:
             template_vm = self.get_vm_failfast(

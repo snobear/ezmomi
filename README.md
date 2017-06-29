@@ -27,7 +27,7 @@ pip install ezmomi
 ##### Clone a template with two static IPs:
 
 ```
-ezmomi clone --template centos67 --hostname test01 --cpus 2 --mem 4 --ips 172.10.16.203 172.10.16.204
+ezmomi clone --template centos67 --hostname test01 --cpus 2 --mem 4 --destination-folder "/DC/folder/" --ips 172.10.16.203 172.10.16.204
 ```
 
 `ips` takes any number of ips.  See `ezmomi clone --help` for a list of params.

@@ -229,6 +229,23 @@ def arg_setup():
         default="Resources",
         help="Resource Pool, e.g. 'Linux Servers'"
     )
+
+    clone_parser.add_argument(
+        "--destination-folder",
+        required=False,
+        default='',
+        type=str,
+        help="Name of the destination folder"
+    )
+
+    clone_parser.add_argument(
+        "--datastore",
+        required=False,
+        default='',
+        type=str,
+        help="Name of the datastore"
+    )
+
     clone_parser.add_argument(
         "--post-clone-cmd",
         type=str,
