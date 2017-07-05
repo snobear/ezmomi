@@ -44,13 +44,13 @@ This example would run /usr/local/bin/additional-provisioning-steps.sh on the sa
 ##### Clone a template and put vm is specific folder
 
 ```
-ezmomi clone --template centos67 --hostname test01 --cpus 2 --mem 4 --destination-folder "/DC/folder/" --ips 172.10.16.203 172.10.16.204
+ezmomi clone --server vcenter_url --template centos67 --hostname test01 --cpus 2 --mem 4 --destination-folder "/DC/folder/" --ips 172.10.16.203 172.10.16.204
 ```
 
-This ^ example will put the cloned vm to specific destination folder
+This example  will put the cloned vm to specific destination folder in specified vcenter.
 
 
-##### Power Operations 
+##### Power Operations
 
 Guest shutdown
 

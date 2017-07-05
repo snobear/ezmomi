@@ -162,7 +162,6 @@ class EZMomi(object):
         self.config['hostname'] = self.config['hostname'].lower()
         self.config['mem'] = int(self.config['mem'] * 1024)  # convert GB to MB
 
-        template_path = self.config['default_templates_path']
         print "Cloning %s to new host %s with %sMB RAM..." % (
             self.config['template'],
             self.config['hostname'],
@@ -255,12 +254,12 @@ class EZMomi(object):
                     % ip_settings[0]['datastore']
             sys.exit(1)
 
-        if template_path:
+        if self.config['template_folder']:
             template_vm = self.get_vm_failfast(
                 self.config['template'],
                 False,
                 'Template VM',
-                path=template_path
+                path=self.config['template_folder']
             )
         else:
             template_vm = self.get_vm_failfast(
