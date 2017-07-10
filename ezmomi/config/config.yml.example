@@ -17,7 +17,6 @@ password: "mypass#123"
 cpus: 1
 mem: 3
 
-default_templates_path: "Specific_folder_for_the_template_This_is_option_like_/DC/folder1/folder2"   #Optional
 template: centos65
 domain: example
 

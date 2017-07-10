@@ -40,7 +40,17 @@ ezmomi clone --template centos6 --hostname test01 --cpus 2 --mem 4 --ips 172.10.
 
 This example would run /usr/local/bin/additional-provisioning-steps.sh on the same host ezmomi is run on. You can reference the `EZMOMI_CLONE_HOSTNAME` environment variable in your script to retrieve the `--hostname`.
 
-##### Power Operations 
+
+##### Clone a template and put vm is specific folder
+
+```
+ezmomi clone --server vcenter_url --template centos67 --hostname test01 --cpus 2 --mem 4 --destination-folder "/DC/folder/" --ips 172.10.16.203 172.10.16.204
+```
+
+This example  will put the cloned vm to specific destination folder in specified vcenter.
+
+
+##### Power Operations
 
 Guest shutdown
 

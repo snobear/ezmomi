@@ -46,6 +46,12 @@ def arg_setup():
         help="Set this flag to disable ssl verification"
     )
 
+    common_parser.add_argument(
+        "--server",
+        required=False,
+        help="vsphere server to connect to."
+    )
+
     # list
     list_parser = subparsers.add_parser(
         "list",
@@ -179,6 +185,12 @@ def arg_setup():
         help="VM template name to clone from"
     )
     clone_parser.add_argument(
+        "--template-folder",
+        type=str,
+        default="",
+        help="Folder to pull templates from"
+    )
+    clone_parser.add_argument(
         "--host",
         required=False,
         type=str,
@@ -229,6 +241,23 @@ def arg_setup():
         default="Resources",
         help="Resource Pool, e.g. 'Linux Servers'"
     )
+
+    clone_parser.add_argument(
+        "--destination-folder",
+        required=False,
+        default='',
+        type=str,
+        help="Name of the destination folder"
+    )
+
+    clone_parser.add_argument(
+        "--datastore",
+        required=False,
+        default='',
+        type=str,
+        help="Name of the datastore"
+    )
+
     clone_parser.add_argument(
         "--post-clone-cmd",
         type=str,

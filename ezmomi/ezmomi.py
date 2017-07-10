@@ -162,7 +162,6 @@ class EZMomi(object):
         self.config['hostname'] = self.config['hostname'].lower()
         self.config['mem'] = int(self.config['mem'] * 1024)  # convert GB to MB
 
-        template_path = self.config['default_templates_path']
         print "Cloning %s to new host %s with %sMB RAM..." % (
             self.config['template'],
             self.config['hostname'],
@@ -201,7 +200,12 @@ class EZMomi(object):
                                   )
 
         # get the folder where VMs are kept for this datacenter
-        destfolder = datacenter.vmFolder
+        if self.config['destination_folder']:
+            destfolder = self.content.searchIndex.FindByInventoryPath(
+                self.config['destination_folder']
+            )
+        else:
+            destfolder = datacenter.vmFolder
 
         cluster = self.get_obj([vim.ClusterComputeResource],
                                ip_settings[0]['cluster']
@@ -237,21 +241,25 @@ class EZMomi(object):
             resource_pool = cluster.resourcePool
 
         datastore = None
-        if 'datastore' in ip_settings[0]:
+
+        if self.config['datastore']:
+            datastore = self.get_obj(
+                [vim.Datastore], self.config['datastore'])
+        elif 'datastore' in ip_settings[0]:
             datastore = self.get_obj(
                 [vim.Datastore],
                 ip_settings[0]['datastore'])
-            if datastore is None:
-                print "Error: Unable to find Datastore '%s'" \
-                      % ip_settings[0]['datastore']
-                sys.exit(1)
+        if datastore is None:
+            print "Error: Unable to find Datastore '%s'" \
+                    % ip_settings[0]['datastore']
+            sys.exit(1)
 
-        if template_path:
+        if self.config['template_folder']:
             template_vm = self.get_vm_failfast(
                 self.config['template'],
                 False,
                 'Template VM',
-                path=template_path
+                path=self.config['template_folder']
             )
         else:
             template_vm = self.get_vm_failfast(
