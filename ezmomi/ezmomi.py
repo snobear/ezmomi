@@ -600,7 +600,7 @@ class EZMomi(object):
 
         for row in data:
             for column in range(0, len(row)):
-                column_len = len(row[column])
+                column_len = len(row[column] or "")
                 try:
                     column_widths[column] = max(column_len,
                                                 column_widths[column])
