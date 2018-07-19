@@ -38,8 +38,9 @@ class EZMomi(object):
             if os.path.isfile(os.environ['EZMOMI_CONFIG']):
                 config_file = os.environ['EZMOMI_CONFIG']
             else:
-                print("%s does not exist.  Set the EZMOMI_CONFIG environment " \
-                      "variable to your config file's path." % os.environ['EZMOMI_CONFIG'])
+                print("%s does not exist.  Set the EZMOMI_CONFIG environment "
+                      "variable to your config file's path."
+                      % os.environ['EZMOMI_CONFIG'])
                 sys.exit(1)
 
         # or use the default config file path if it exists
@@ -60,20 +61,20 @@ class EZMomi(object):
                 copy(ezmomi_ex_config, default_cfg_dir)
             except:
                 print("Error copying example config file from %s to %s"
-                       % (ezmomi_ex_config, default_cfg_dir))
+                      % (ezmomi_ex_config, default_cfg_dir))
                 sys.exit(1)
 
-            print("Could not find a config.yml file, so I copied an example " \
-                  "to your home directory at %s/config.yml.example.  Please " \
-                  "rename this to config.yml and add your vSphere " \
+            print("Could not find a config.yml file, so I copied an example "
+                  "to your home directory at %s/config.yml.example.  Please "
+                  "rename this to config.yml and add your vSphere "
                   "environment's settings." % default_cfg_dir)
             sys.exit(0)
         try:
             config = yaml.load(open(config_file))
         except IOError:
-            print("Unable to open config file. The default ezmomi config " \
-                  "filepath is ~/.config/ezmomi/config.yml. You can also " \
-                  "specify the config file path by setting the " \
+            print("Unable to open config file. The default ezmomi config "
+                  "filepath is ~/.config/ezmomi/config.yml. You can also "
+                  "specify the config file path by setting the "
                   "EZMOMI_CONFIG environment variable.")
             sys.exit(1)
         except Exception as e:
@@ -94,6 +95,14 @@ class EZMomi(object):
         if notset:
             print("Required parameters not set: %s\n" % notset)
             sys.exit(1)
+
+        # Rename 'distributedvirtualportgroup' config while leaving it
+        # backwards-compatible
+        for network in config['networks']:
+            if 'distributedvirtualportgroup' in config['networks'][network]:
+                config['networks'][network]['dvportgroup'] = (
+                    config['networks'][network]['distributedvirtualportgroup'])
+                del config['networks'][network]['distributedvirtualportgroup']
 
         return config
 
@@ -144,7 +153,7 @@ class EZMomi(object):
             container = self.content.viewManager.CreateContainerView(
                 self.content.rootFolder, [eval(vim_obj)], True)
         except AttributeError:
-            print("%s is not a Managed Object Type.  See the vSphere API " \
+            print("%s is not a Managed Object Type.  See the vSphere API "
                   "docs for possible options." % vimtype)
             sys.exit(1)
 
@@ -199,7 +208,7 @@ class EZMomi(object):
 
             # throw an error if we couldn't find a network for this ip
             if not any(d['ip'] == ip for d in ip_settings):
-                print("I don't know what network %s is in.  You can supply " \
+                print("I don't know what network %s is in.  You can supply "
                       "settings for this network in config.yml." % ip_string)
                 sys.exit(1)
 
@@ -260,8 +269,8 @@ class EZMomi(object):
                 [vim.Datastore],
                 ip_settings[0]['datastore'])
         if datastore is None:
-            print("Error: Unable to find Datastore '%s'" \
-                    % ip_settings[0]['datastore'])
+            print("Error: Unable to find Datastore '%s'"
+                  % ip_settings[0]['datastore'])
             sys.exit(1)
 
         if self.config['template_folder']:
@@ -428,8 +437,8 @@ class EZMomi(object):
             try:
                 # helper env variables
                 os.environ['EZMOMI_CLONE_HOSTNAME'] = self.config['hostname']
-                print("Running --post-clone-cmd %s" % \
-                      self.config['post_clone_cmd'])
+                print("Running --post-clone-cmd %s"
+                      % self.config['post_clone_cmd'])
                 os.system(self.config['post_clone_cmd'])
 
             except Exception as e:
@@ -548,7 +557,7 @@ class EZMomi(object):
         else:
             if self.guestToolsRunning(vm):
                 timeout_minutes = 10
-                print("waiting for %s to shutdown " \
+                print("waiting for %s to shutdown "
                       "(%s minutes before forced powerOff)" % (
                           vm.name,
                           str(timeout_minutes)
@@ -559,7 +568,7 @@ class EZMomi(object):
                     print("shutdown complete")
                     print("%s poweredOff" % vm.name)
                 else:
-                    print("%s has not shutdown after %s minutes:" \
+                    print("%s has not shutdown after %s minutes:"
                           "will powerOff" % (vm.name, str(timeout_minutes)))
                     self.powerOff()
 
