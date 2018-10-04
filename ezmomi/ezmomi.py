@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from pyVim.connect import SmartConnect, Disconnect
+from pyVim.connect import SmartConnect, SmartConnectNoSSL, Disconnect
 from pyVmomi import vim, vmodl
 import atexit
 import os
@@ -27,7 +27,7 @@ class EZMomi(object):
         except:
             msg = obj
 
-        print "DEBUG: %s\n%s" % (title, pformat(msg))
+        print("DEBUG: %s\n%s" % (title, pformat(msg)))
 
     def get_configs(self, kwargs):
         default_cfg_dir = "%s/.config/ezmomi" % os.path.expanduser("~")
@@ -38,8 +38,9 @@ class EZMomi(object):
             if os.path.isfile(os.environ['EZMOMI_CONFIG']):
                 config_file = os.environ['EZMOMI_CONFIG']
             else:
-                print "%s does not exist.  Set the EZMOMI_CONFIG environment" \
+                print("%s does not exist.  Set the EZMOMI_CONFIG environment "
                       "variable to your config file's path."
+                      % os.environ['EZMOMI_CONFIG'])
                 sys.exit(1)
 
         # or use the default config file path if it exists
@@ -59,25 +60,26 @@ class EZMomi(object):
             try:
                 copy(ezmomi_ex_config, default_cfg_dir)
             except:
-                print ("Error copying example config file from %s to %s"
-                       % (ezmomi_ex_config, default_cfg_dir))
+                print("Error copying example config file from %s to %s"
+                      % (ezmomi_ex_config, default_cfg_dir))
                 sys.exit(1)
 
-            print "Could not find a config.yml file, so I copied an example " \
-                  "to your home directory at %s/config.yml.example.  Please " \
-                  "rename this to config.yml and add your vSphere " \
-                  "environment's settings." % default_cfg_dir
+            print("Could not find a config.yml file, so I copied an example "
+                  "to your home directory at %s/config.yml.example.  Please "
+                  "rename this to config.yml and add your vSphere "
+                  "environment's settings." % default_cfg_dir)
             sys.exit(0)
         try:
-            config = yaml.load(file(config_file))
+            config = yaml.load(open(config_file))
         except IOError:
-            print "Unable to open config file. The default ezmomi config " \
-                  "filepath is ~/.config/ezmomi/config.yml. You can also " \
-                  "specify the config file path by setting the " \
-                  "EZMOMI_CONFIG environment variable."
+            print("Unable to open config file. The default ezmomi config "
+                  "filepath is ~/.config/ezmomi/config.yml. You can also "
+                  "specify the config file path by setting the "
+                  "EZMOMI_CONFIG environment variable.")
             sys.exit(1)
-        except Exception:
-            print 'Unable to read config file.  YAML syntax issue, perhaps?'
+        except Exception as e:
+            print('Unable to read config file.  YAML syntax issue, perhaps?')
+            print(e)
             sys.exit(1)
 
         # Check all required values were supplied either via command line
@@ -91,30 +93,47 @@ class EZMomi(object):
                 # compile list of parameters that were not set
                 notset.append(key)
         if notset:
-            print "Required parameters not set: %s\n" % notset
+            print("Required parameters not set: %s\n" % notset)
             sys.exit(1)
+
+        # Rename 'distributedvirtualportgroup' config while leaving it
+        # backwards-compatible
+        for network in config['networks']:
+            if 'distributedvirtualportgroup' in config['networks'][network]:
+                config['networks'][network]['dvportgroup'] = (
+                    config['networks'][network]['distributedvirtualportgroup'])
+                del config['networks'][network]['distributedvirtualportgroup']
 
         return config
 
     def connect(self):
         """Connect to vCenter server"""
         try:
-            context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+            context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
             if self.config['no_ssl_verify']:
                 requests.packages.urllib3.disable_warnings()
                 context.verify_mode = ssl.CERT_NONE
-            self.si = SmartConnect(
-                host=self.config['server'],
-                user=self.config['username'],
-                pwd=self.config['password'],
-                port=int(self.config['port']),
-                sslContext=context,
-                certFile=None,
-                keyFile=None,
-            )
+                self.si = SmartConnectNoSSL(
+                    host=self.config['server'],
+                    user=self.config['username'],
+                    pwd=self.config['password'],
+                    port=int(self.config['port']),
+                    certFile=None,
+                    keyFile=None,
+                )
+            else:
+                self.si = SmartConnect(
+                    host=self.config['server'],
+                    user=self.config['username'],
+                    pwd=self.config['password'],
+                    port=int(self.config['port']),
+                    sslContext=context,
+                    certFile=None,
+                    keyFile=None,
+                )
         except Exception as e:
-            print 'Unable to connect to vsphere server.'
-            print e
+            print('Unable to connect to vsphere server.')
+            print(e)
             sys.exit(1)
 
         # add a clean up routine
@@ -134,12 +153,12 @@ class EZMomi(object):
             container = self.content.viewManager.CreateContainerView(
                 self.content.rootFolder, [eval(vim_obj)], True)
         except AttributeError:
-            print "%s is not a Managed Object Type.  See the vSphere API " \
-                  "docs for possible options." % vimtype
+            print("%s is not a Managed Object Type.  See the vSphere API "
+                  "docs for possible options." % vimtype)
             sys.exit(1)
 
         # print header line
-        print "%s list" % vimtype
+        print("%s list" % vimtype)
 
         if vimtype == "VirtualMachine":
             rows = [['MOID', 'Name', 'Status']]
@@ -162,11 +181,11 @@ class EZMomi(object):
         self.config['hostname'] = self.config['hostname'].lower()
         self.config['mem'] = int(self.config['mem'] * 1024)  # convert GB to MB
 
-        print "Cloning %s to new host %s with %sMB RAM..." % (
+        print("Cloning %s to new host %s with %sMB RAM..." % (
             self.config['template'],
             self.config['hostname'],
             self.config['mem']
-        )
+        ))
 
         # initialize a list to hold our network settings
         ip_settings = list()
@@ -189,8 +208,8 @@ class EZMomi(object):
 
             # throw an error if we couldn't find a network for this ip
             if not any(d['ip'] == ip for d in ip_settings):
-                print "I don't know what network %s is in.  You can supply " \
-                      "settings for this network in config.yml." % ip_string
+                print("I don't know what network %s is in.  You can supply "
+                      "settings for this network in config.yml." % ip_string)
                 sys.exit(1)
 
         # network to place new VM in
@@ -250,8 +269,8 @@ class EZMomi(object):
                 [vim.Datastore],
                 ip_settings[0]['datastore'])
         if datastore is None:
-            print "Error: Unable to find Datastore '%s'" \
-                    % ip_settings[0]['datastore']
+            print("Error: Unable to find Datastore '%s'"
+                  % ip_settings[0]['datastore'])
             sys.exit(1)
 
         if self.config['template_folder']:
@@ -311,8 +330,8 @@ class EZMomi(object):
             nic.device.key = 4000
             nic.device.deviceInfo = vim.Description()
             nic.device.deviceInfo.label = 'Network Adapter %s' % (key + 1)
-            if 'distributedvirtualportgroup' in ip_settings[key]:
-                dvpg = ip_settings[key]['distributedvirtualportgroup']
+            if 'dvportgroup' in ip_settings[key]:
+                dvpg = ip_settings[key]['dvportgroup']
                 nic.device.deviceInfo.summary = dvpg
                 pg_obj = self.get_obj([vim.dvs.DistributedVirtualPortgroup], dvpg)  # noqa
                 dvs_port_connection = vim.dvs.PortConnection()
@@ -418,12 +437,12 @@ class EZMomi(object):
             try:
                 # helper env variables
                 os.environ['EZMOMI_CLONE_HOSTNAME'] = self.config['hostname']
-                print "Running --post-clone-cmd %s" % \
-                      self.config['post_clone_cmd']
+                print("Running --post-clone-cmd %s"
+                      % self.config['post_clone_cmd'])
                 os.system(self.config['post_clone_cmd'])
 
             except Exception as e:
-                print "Error running post-clone command. Exception: %s" % e
+                print("Error running post-clone command. Exception: %s" % e)
                 pass
 
         # send notification email
@@ -497,7 +516,7 @@ class EZMomi(object):
                 tasks.append(vm.PowerOff())
 
             tasks.append(vm.Destroy())
-            print "Destroying %s..." % self.config['name']
+            print("Destroying %s..." % self.config['name'])
             result = self.WaitForTasks(tasks)
 
     def status(self):
@@ -534,27 +553,27 @@ class EZMomi(object):
         vm = self.get_vm_failfast(self.config['name'])
 
         if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOff:
-            print "%s already poweredOff" % vm.name
+            print("%s already poweredOff" % vm.name)
         else:
             if self.guestToolsRunning(vm):
                 timeout_minutes = 10
-                print "waiting for %s to shutdown " \
+                print("waiting for %s to shutdown "
                       "(%s minutes before forced powerOff)" % (
                           vm.name,
                           str(timeout_minutes)
-                      )
+                      ))
                 vm.ShutdownGuest()
                 if self.WaitForVirtualMachineShutdown(vm,
                                                       timeout_minutes * 60):
-                    print "shutdown complete"
-                    print "%s poweredOff" % vm.name
+                    print("shutdown complete")
+                    print("%s poweredOff" % vm.name)
                 else:
-                    print "%s has not shutdown after %s minutes:" \
-                          "will powerOff" % (vm.name, str(timeout_minutes))
+                    print("%s has not shutdown after %s minutes:"
+                          "will powerOff" % (vm.name, str(timeout_minutes)))
                     self.powerOff()
 
             else:
-                print "GuestTools not running or not installed: will powerOff"
+                print("GuestTools not running or not installed: will powerOff")
                 self.powerOff()
 
     def createSnapshot(self):
@@ -565,7 +584,7 @@ class EZMomi(object):
                                        memory=self.config['memory'],
                                        quiesce=self.config['quiesce']))
         result = self.WaitForTasks(tasks)
-        print "Created snapshot for %s" % vm.name
+        print("Created snapshot for %s" % vm.name)
 
     def get_snapshots_recursive(self, snap_tree):
         local_snap = []
@@ -615,7 +634,7 @@ class EZMomi(object):
             format += " {%d:<%d}" % (width, column_widths[width])
 
         for row in data:
-            print format.format(*row)
+            print(format.format(*row))
 
     def print_as_lines(self, data):
         maxlen = 0
@@ -646,7 +665,7 @@ class EZMomi(object):
             data = [['VM', 'Snapshot', 'Create Time']] + snapshots
             self.print_as_table(data)
         else:
-            print "No snapshots for %s" % self.config['vm']
+            print("No snapshots for %s" % self.config['vm'])
 
     def removeSnapshot(self):
         tasks = []
@@ -682,30 +701,30 @@ class EZMomi(object):
         vm = self.get_vm_failfast(self.config['name'])
 
         if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOff:
-            print "%s already poweredOff" % vm.name
+            print("%s already poweredOff" % vm.name)
         else:
             tasks = list()
             tasks.append(vm.PowerOff())
             result = self.WaitForTasks(tasks)
-            print "%s poweredOff" % vm.name
+            print("%s poweredOff" % vm.name)
 
     def powerOn(self):
         vm = self.get_vm_failfast(self.config['name'])
 
         if vm.runtime.powerState == vim.VirtualMachinePowerState.poweredOn:
-            print "%s already poweredOn" % vm.name
+            print("%s already poweredOn" % vm.name)
         else:
             tasks = list()
             tasks.append(vm.PowerOn())
             result = self.WaitForTasks(tasks)
-            print "%s poweredOn" % vm.name
+            print("%s poweredOn" % vm.name)
 
     def syncTimeWithHost(self):
         vm = self.get_vm_failfast(self.config['name'])
         flag = self.config['value']
 
         if vm.config.tools.syncTimeWithHost == flag:
-            print "%s syncTimeWithHost already %s" % (vm.name, str(flag))
+            print("%s syncTimeWithHost already %s" % (vm.name, str(flag)))
         else:
             spec = vim.vm.ConfigSpec()
             spec.tools = vim.vm.ToolsConfigInfo()
@@ -713,7 +732,7 @@ class EZMomi(object):
 
             task = vm.ReconfigVM_Task(spec)
             result = self.WaitForTasks([task])
-            print "%s syncTimeWithHost %s" % (vm.name, str(flag))
+            print("%s syncTimeWithHost %s" % (vm.name, str(flag)))
 
     '''
      Helper methods
@@ -821,16 +840,16 @@ class EZMomi(object):
         fail fast if the object isn't a valid reference
         """
         if verbose:
-            print "Finding HostSystem named %s..." % name
+            print("Finding HostSystem named %s..." % name)
 
         hs = self.get_host_system(name)
 
         if hs is None:
-            print "Error: %s '%s' does not exist" % (host_system_term, name)
+            print("Error: %s '%s' does not exist" % (host_system_term, name))
             sys.exit(1)
 
         if verbose:
-            print "Found HostSystem: {0} Name: {1}" % (hs, hs.name)
+            print("Found HostSystem: {0} Name: {1}" % (hs, hs.name))
 
         return hs
 
@@ -847,17 +866,17 @@ class EZMomi(object):
         fail fast if the object isn't a valid reference
         """
         if verbose:
-            print "Finding VirtualMachine named %s..." % name
+            print("Finding VirtualMachine named %s..." % name)
         if path:
             vm = self.get_vm(name, path=path)
         else:
             vm = self.get_vm(name)
         if vm is None:
-            print "Error: %s '%s' does not exist" % (vm_term, name)
+            print("Error: %s '%s' does not exist" % (vm_term, name))
             sys.exit(1)
 
         if verbose:
-            print "Found VirtualMachine: %s Name: %s" % (vm, vm.name)
+            print("Found VirtualMachine: %s Name: %s" % (vm, vm.name))
 
         return vm
 

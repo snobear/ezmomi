@@ -23,11 +23,11 @@ setup(
     description='VMware vSphere Command line tool',
     long_description=open('README.txt').read(),
     install_requires=[
-        "netaddr==0.7.18",
-        "pyvmomi==6.0.0",
-        "PyYAML==3.11",
-        "requests==2.8.1",
-        "six==1.10.0",
-        "wheel==0.26.0",
+        "netaddr==0.7.19",
+        "pyvmomi==6.7.0",
+        "PyYAML==3.13",
+        "requests==2.19.1",
+        "six==1.11.0",
+        "wheel==0.31.1",
     ],
 )

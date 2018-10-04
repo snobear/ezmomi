@@ -1,6 +1,6 @@
 """Command line definitions for ezmomi"""
-from params import arg_setup
-from ezmomi import EZMomi
+from .params import arg_setup
+from .ezmomi import EZMomi
 
 
 def cli():
