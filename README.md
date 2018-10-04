@@ -11,7 +11,7 @@ EZmomi uses [pyvmomi](https://github.com/vmware/pyvmomi) (VMware vSphere API Pyt
 
 ```
 vSphere 6
-Python 2.7
+Python 2.7 or 3.x
 ```
 
 (If you are using vSphere 5, install the older ezmomi 0.x:  `pip install ezmomi==0.4.2`)
