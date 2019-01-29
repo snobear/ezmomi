@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 try:
     from setuptools import setup
 except ImportError:
@@ -6,7 +8,7 @@ except ImportError:
 try:
     exec(open('ezmomi/version.py').read())
 except:
-    print "Unable to import ezmomi/version.py. Exiting."
+    print("Unable to import ezmomi/version.py. Exiting.")
     sys.exit(1)
 
 setup(
