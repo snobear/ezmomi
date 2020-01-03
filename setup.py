@@ -28,7 +28,7 @@ setup(
         "netaddr==0.7.19",
         "pyvmomi==6.7.0.2018.9",
         "PyYAML==5.1",
-        "requests==2.19.1",
+        "requests==2.20.0",
         "six==1.11.0",
         "wheel==0.31.1",
     ],
