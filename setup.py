@@ -30,6 +30,6 @@ setup(
         "PyYAML==5.4",
         "requests==2.20.0",
         "six==1.11.0",
-        "wheel==0.31.1",
+        "wheel==0.38.1",
     ],
 )
